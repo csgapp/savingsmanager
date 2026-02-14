@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  
+  <!-- ================ PAGE TITLE ================ -->
+  <title>Members - Savings Group Manager</title>
+  
+  <!-- ================ PROFESSIONAL FAVICON - INSTANT ================ -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23183768'/><circle cx='50' cy='45' r='25' fill='%23FFD700'/><circle cx='35' cy='40' r='5' fill='%23333'/><circle cx='65' cy='40' r='5' fill='%23333'/><rect x='45' y='30' width='10' height='10' rx='2' fill='%2326A69A'/><circle cx='75' cy='25' r='8' fill='%23FFC107'/><text x='72' y='30' fill='%23183768' font-size='10'>K</text><path d='M20 70 L40 50 L60 60 L80 30' stroke='white' stroke-width='4' fill='none'/><polygon points='82,30 75,25 75,35' fill='white'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%23183768'/><circle cx='90' cy='81' r='45' fill='%23FFD700'/><circle cx='63' cy='72' r='9' fill='%23333'/><circle cx='117' cy='72' r='9' fill='%23333'/><rect x='81' y='54' width='18' height='18' rx='4' fill='%2326A69A'/><circle cx='135' cy='45' r='14' fill='%23FFC107'/><text x='130' y='52' fill='%23183768' font-size='18'>K</text><path d='M36 126 L72 90 L108 108 L144 54' stroke='white' stroke-width='8' fill='none'/><polygon points='148,54 136,45 136,63' fill='white'/></svg>">
+  <meta name="msapplication-TileColor" content="#183768">
+  <meta name="theme-color" content="#183768">
+  
+  <!-- ================ STYLESHEETS ================ -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    /* Member management specific styles */
+    .member-filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      position: relative;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px 12px 45px;
+      border: 2px solid var(--light-gray);
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      transition: all var(--transition-fast);
+    }
+    
+    .search-box input:focus {
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 3px rgba(38,166,154,0.1);
+    }
+    
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1rem;
+      color: var(--dark-gray);
+    }
+    
+    .status-filter {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .status-filter select {
+      padding: 12px 16px;
+      border: 2px solid var(--light-gray);
+      border-radius: var(--radius-md);
+      background: white;
+      font-size: 1rem;
+    }
+    
+    .member-avatar-small {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    
+    .member-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .quick-action-card {
+      background: linear-gradient(135deg, var(--white), var(--off-white));
+      border: 1px solid var(--light-gray);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-normal);
+    }
+    
+    .quick-action-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--secondary);
+    }
+    
+    .quick-action-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    
+    #install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      padding: 20px;
+      display: none;
+      z-index: 10000;
+      border: 1px solid rgba(38, 166, 154, 0.3);
+      animation: slideUp 0.5s ease;
+    }
+    
+    #install-prompt.show {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .install-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #183768, #1e4282);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 28px;
+    }
+    
+    .install-content {
+      flex: 1;
+    }
+    
+    .install-title {
+      font-weight: 700;
+      color: #183768;
+      margin-bottom: 4px;
+    }
+    
+    .install-text {
+      font-size: 13px;
+      color: #6c757d;
+    }
+    
+    .install-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .install-btn {
+      background: linear-gradient(135deg, #26A69A, #1E7E74);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .install-close {
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .member-filters {
+        flex-direction: column;
+      }
+      
+      .search-box {
+        width: 100%;
+      }
+      
+      #install-prompt {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ================ INSTALL APP PROMPT ================ -->
+  <div id="install-prompt">
+    <div class="install-icon">🏦</div>
+    <div class="install-content">
+      <div class="install-title">Install Savings Group Manager</div>
+      <div class="install-text">Add to home screen for quick access</div>
+    </div>
+    <div class="install-actions">
+      <button id="installBtn" class="install-btn">Install</button>
+      <button id="installCloseBtn" class="install-close">✕</button>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-brand">
+      <span style="font-size: 1.5rem; margin-right: 10px;">🏦</span>
+      Savings Group Manager
+    </div>
+    <div class="nav-links">
+      <a href="admin.html">Dashboard</a>
+      <a href="members.html" class="active">Members</a>
+      <a href="shareout.html">Share-Out</a>
+      <a href="history.html">History</a>
+      <a href="charts.html">Charts</a>
+      <button id="logoutBtn" class="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <div class="quick-action-card" onclick="openAddMemberModal()">
+        <div class="quick-action-icon">➕</div>
+        <h4>Add Member</h4>
+        <p style="font-size: 0.85rem; color: var(--dark-gray);">Register new member</p>
+      </div>
+      <div class="quick-action-card" onclick="exportMembersCSV()">
+        <div class="quick-action-icon">📄</div>
+        <h4>Export CSV</h4>
+        <p style="font-size: 0.85rem; color: var(--dark-gray);">Download member list</p>
+      </div>
+      <div class="quick-action-card" onclick="exportMembersPDF()">
+        <div class="quick-action-icon">📑</div>
+        <h4>Export PDF</h4>
+        <p style="font-size: 0.85rem; color: var(--dark-gray);">Printable directory</p>
+      </div>
+      <div class="quick-action-card" onclick="window.location.href='shareout.html'">
+        <div class="quick-action-icon">📊</div>
+        <h4>Share-Out</h4>
+        <p style="font-size: 0.85rem; color: var(--dark-gray);">Calculate payouts</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">👥 Member Management</h2>
+        <button onclick="openAddMemberModal()" class="btn-primary">+ Add New Member</button>
+      </div>
+      
+      <!-- Filters -->
+      <div class="member-filters">
+        <div class="search-box">
+          <input type="text" id="memberSearch" placeholder="Search by name, email or phone...">
+        </div>
+        <div class="status-filter">
+          <select id="statusFilter">
+            <option value="all">All Members</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="loans">With Loans</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Members Table -->
+      <div class="table-responsive">
+        <table id="membersTable">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Contact</th>
+              <th>Balance</th>
+              <th>Total Saved</th>
+              <th>Loans</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="membersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cycle Settings -->
+    <div class="panel">
+      <h2>⚙️ Cycle Settings</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cycle Length (months)</label>
+          <input type="number" id="months" value="8" min="1" max="60">
+        </div>
+        <div class="form-group">
+          <label>Default Growth Method</label>
+          <select id="methodSelector">
+            <option value="simple">Simple Growth</option>
+            <option value="compound" selected>Compound Growth</option>
+            <option value="flat">Flat Return (20%)</option>
+            <option value="declining">Declining Balance</option>
+            <option value="tiered">Tiered Growth</option>
+            <option value="profit">Profit-Sharing (30%)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projected Payouts -->
+    <div class="panel">
+      <h2>📈 Projected Payouts (Current Cycle)</h2>
+      <div class="table-responsive">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Upfront</th>
+              <th>Installments</th>
+              <th>Upfront Payout</th>
+              <th>Installment Payout</th>
+              <th>Total Payout</th>
+              <th>Return %</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+          <tfoot id="summaryRow"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Member Modal -->
+  <div id="addMemberModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Add New Member</h3>
+        <span class="close-modal" onclick="closeAddMemberModal()">&times;</span>
+      </div>
+      <form id="addMemberForm">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="modalMemberName" placeholder="Enter full name" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="modalMemberEmail" placeholder="member@example.com" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="modalMemberPhone" placeholder="+260 XXX XXX XXX">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Initial Savings (K)</label>
+            <input type="number" id="modalInitialSavings" value="0" min="0" step="100">
+          </div>
+          <div class="form-group">
+            <label>Monthly Installment (K)</label>
+            <input type="number" id="modalMonthlyInstallment" value="0" min="0" step="50">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Membership Fee (K)</label>
+          <input type="number" id="modalMembershipFee" value="50" readonly>
+          <small style="color: var(--dark-gray);">Annual fee - charged once</small>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Add Member</button>
+          <button type="button" onclick="closeAddMemberModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Export Progress Indicator -->
+  <div id="exportProgress" class="export-progress">
+    <div class="spinner"></div>
+    <span>Generating your report...</span>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!AuthManager.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      loadMembers();
+      loadProjectedPayouts();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      document.getElementById('addMemberForm').addEventListener('submit', handleAddMember);
+      document.getElementById('logoutBtn').addEventListener('click', () => AuthManager.logout());
+      document.getElementById('months').addEventListener('input', loadProjectedPayouts);
+      document.getElementById('methodSelector').addEventListener('change', loadProjectedPayouts);
+      document.getElementById('memberSearch').addEventListener('input', filterMembers);
+      document.getElementById('statusFilter').addEventListener('change', filterMembers);
+    }
+
+    function handleAddMember(e) {
+      e.preventDefault();
+      
+      const memberData = {
+        name: document.getElementById('modalMemberName').value,
+        email: document.getElementById('modalMemberEmail').value,
+        phone: document.getElementById('modalMemberPhone').value,
+        initialSavings: parseFloat(document.getElementById('modalInitialSavings').value) || 0,
+        monthlyInstallment: parseFloat(document.getElementById('modalMonthlyInstallment').value) || 0,
+        role: 'member',
+        password: 'member123'
+      };
+      
+      const newMember = StorageManager.addMember(memberData);
+      
+      if (memberData.initialSavings > 0) {
+        StorageManager.addTransaction({
+          memberId: newMember.id,
+          type: 'savings',
+          amount: memberData.initialSavings,
+          description: 'Initial savings deposit'
+        });
+      }
+      
+      const feeAmount = parseFloat(document.getElementById('modalMembershipFee').value) || 50;
+      StorageManager.addTransaction({
+        memberId: newMember.id,
+        type: 'fee',
+        amount: -feeAmount,
+        description: 'Annual membership fee'
+      });
+      
+      alert('✅ Member added successfully!');
+      closeAddMemberModal();
+      loadMembers();
+      loadProjectedPayouts();
+    }
+
+    function loadMembers() {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+      
+      window.allMembers = members; // Store for filtering
+      window.memberLoans = loans;
+      window.memberTransactions = transactions;
+      
+      renderMembers(members);
+    }
+
+    function renderMembers(membersToRender) {
+      const tbody = document.getElementById('membersTableBody');
+      tbody.innerHTML = '';
+      
+      membersToRender.forEach(member => {
+        if (member.role === 'admin') return; // Hide admin from member list
+        
+        const memberTransactions = window.memberTransactions.filter(t => t.memberId === member.id);
+        const memberLoans = window.memberLoans.filter(l => l.memberId === member.id);
+        
+        const balance = memberTransactions.reduce((sum, t) => {
+          if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
+          if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+          return sum;
+        }, 0);
+        
+        const totalSavings = memberTransactions
+          .filter(t => t.type === 'savings')
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        const activeLoans = memberLoans.filter(l => l.status === 'active').length;
+        
+        const initials = member.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>
+            <div class="member-info">
+              <div class="member-avatar-small">${initials}</div>
+              <div>
+                <strong>${member.name}</strong>
+                <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">ID: ${member.id.slice(-6)}</p>
+              </div>
+            </div>
+          </td>
+          <td>
+            ${member.email}<br>
+            <span style="font-size: 0.75rem; color: var(--dark-gray);">${member.phone || 'No phone'}</span>
+          </td>
+          <td class="${balance >= 0 ? 'positive' : 'negative'}" style="font-weight: bold;">
+            ${UIManager.formatCurrency(balance)}
+          </td>
+          <td>${UIManager.formatCurrency(totalSavings)}</td>
+          <td>
+            <span class="status-badge ${activeLoans > 0 ? 'status-active' : ''}" 
+                  style="${activeLoans === 0 ? 'background: var(--light-gray); color: var(--dark-gray);' : ''}">
+              ${activeLoans} ${activeLoans === 1 ? 'Loan' : 'Loans'}
+            </span>
+          </td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td>${new Date(member.joinedDate).toLocaleDateString()}</td>
+          <td>
+            <button onclick="editMember('${member.id}')" class="btn-small" style="margin-right: 5px;">✏️</button>
+            <button onclick="recordSavings('${member.id}')" class="btn-small" style="background: var(--success);">💰</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterMembers() {
+      const searchTerm = document.getElementById('memberSearch').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      
+      let filtered = window.allMembers.filter(m => m.role !== 'admin');
+      
+      // Apply search filter
+      if (searchTerm) {
+        filtered = filtered.filter(m => 
+          m.name.toLowerCase().includes(searchTerm) ||
+          m.email.toLowerCase().includes(searchTerm) ||
+          (m.phone && m.phone.includes(searchTerm))
+        );
+      }
+      
+      // Apply status filter
+      if (statusFilter === 'active') {
+        filtered = filtered.filter(m => m.status !== 'inactive');
+      } else if (statusFilter === 'loans') {
+        filtered = filtered.filter(m => {
+          const memberLoans = window.memberLoans.filter(l => l.memberId === m.id && l.status === 'active');
+          return memberLoans.length > 0;
+        });
+      }
+      
+      renderMembers(filtered);
+    }
+
+    function loadProjectedPayouts() {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      const months = parseInt(document.getElementById('months').value) || 8;
+      const method = document.getElementById('methodSelector').value;
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+      
+      const tbody = document.getElementById('resultsBody');
+      tbody.innerHTML = '';
+      
+      let highestPayout = 0;
+      let totalPayout = 0;
+      
+      members.filter(m => m.role !== 'admin').forEach(member => {
+        const memberTransactions = transactions.filter(t => t.memberId === member.id);
+        
+        const upfront = memberTransactions
+          .filter(t => t.type === 'savings' && t.description?.includes('initial'))
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        const totalInstallments = memberTransactions
+          .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        const installment = months > 0 ? totalInstallments / months : 0;
+        
+        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months });
+        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment });
+        const total = (upfrontResult || 0) + (installmentResult || 0);
+        const totalContributed = upfront + totalInstallments;
+        const returnPercent = totalContributed > 0 ? ((total - totalContributed) / totalContributed * 100).toFixed(1) : '0.0';
+        
+        if (total > highestPayout) highestPayout = total;
+        totalPayout += total;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${member.name}</strong></td>
+          <td>${UIManager.formatCurrency(upfront)}</td>
+          <td>${UIManager.formatCurrency(totalInstallments)}</td>
+          <td>${UIManager.formatCurrency(upfrontResult || 0)}</td>
+          <td>${UIManager.formatCurrency(installmentResult || 0)}</td>
+          <td><strong>${UIManager.formatCurrency(total)}</strong></td>
+          <td class="${returnPercent >= 0 ? 'positive' : 'negative'}">+${returnPercent}%</td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      document.getElementById('summaryRow').innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: right; font-weight: bold;">
+            Total Payout: ${UIManager.formatCurrency(totalPayout)} | 
+            Highest: ${UIManager.formatCurrency(highestPayout)}
+          </td>
+        </tr>
+      `;
+    }
+
+    // Modal functions
+    function openAddMemberModal() {
+      document.getElementById('addMemberModal').classList.add('active');
+    }
+
+    function closeAddMemberModal() {
+      document.getElementById('addMemberModal').classList.remove('active');
+      document.getElementById('addMemberForm').reset();
+    }
+
+    // Member actions
+    window.editMember = function(memberId) {
+      window.location.href = `admin.html?edit=${memberId}`;
+    };
+
+    window.recordSavings = function(memberId) {
+      const amount = prompt('Enter savings amount (K):');
+      if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+        StorageManager.addTransaction({
+          memberId: memberId,
+          type: 'savings',
+          amount: parseFloat(amount),
+          description: 'Manual savings deposit'
+        });
+        loadMembers();
+        loadProjectedPayouts();
+        alert('✅ Savings recorded successfully!');
+      }
+    };
+
+    // Export functions
+    function showExportProgress() {
+      document.getElementById('exportProgress').classList.add('active');
+    }
+
+    function hideExportProgress() {
+      setTimeout(() => document.getElementById('exportProgress').classList.remove('active'), 500);
+    }
+
+    window.exportMembersCSV = function() {
+      showExportProgress();
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        
+        const formattedData = members.filter(m => m.role !== 'admin').map(member => {
+          const memberTransactions = transactions.filter(t => t.memberId === member.id);
+          const memberLoans = loans.filter(l => l.memberId === member.id);
+          
+          const balance = memberTransactions.reduce((sum, t) => {
+            if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
+            if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+            return sum;
+          }, 0);
+          
+          const totalSavings = memberTransactions.filter(t => t.type === 'savings').reduce((sum, t) => sum + t.amount, 0);
+          const activeLoans = memberLoans.filter(l => l.status === 'active').length;
+          const totalLoans = memberLoans.reduce((sum, l) => sum + l.amount, 0);
+          
+          return {
+            'Member ID': member.id.slice(-8),
+            'Full Name': member.name,
+            'Email': member.email,
+            'Phone': member.phone || '-',
+            'Balance (K)': balance.toFixed(2),
+            'Total Savings (K)': totalSavings.toFixed(2),
+            'Active Loans': activeLoans,
+            'Total Loan Amount (K)': totalLoans.toFixed(2),
+            'Join Date': new Date(member.joinedDate).toLocaleDateString()
+          };
+        });
+        
+        ExportManager.toCSV(formattedData, 'member-directory');
+        hideExportProgress();
+      } catch (error) {
+        console.error('Export error:', error);
+        alert('Error generating export');
+        hideExportProgress();
+      }
+    };
+
+    window.exportMembersPDF = function() {
+      showExportProgress();
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        
+        const reportDiv = document.createElement('div');
+        reportDiv.id = 'member-report';
+        
+        let html = `
+          <h1 style="color: #183768; text-align: center;">Member Directory Report</h1>
+          <p style="text-align: center; color: #666;">Generated: ${new Date().toLocaleString()}</p>
+          <p style="text-align: center; color: #666;">Total Members: ${members.filter(m => m.role !== 'admin').length}</p>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 30px;">
+            <thead>
+              <tr style="background-color: #183768; color: white;">
+                <th style="padding: 12px;">Name</th>
+                <th style="padding: 12px;">Email</th>
+                <th style="padding: 12px;">Phone</th>
+                <th style="padding: 12px;">Balance</th>
+                <th style="padding: 12px;">Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        members.filter(m => m.role !== 'admin').forEach(member => {
+          const memberTransactions = transactions.filter(t => t.memberId === member.id);
+          const balance = memberTransactions.reduce((sum, t) => {
+            if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
+            if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+            return sum;
+          }, 0);
+          
+          html += `
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>${member.name}</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${member.email}</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${member.phone || '-'}</td>
+              <td style="padding: 10px; border: 1px solid #ddd; ${balance >= 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
+                K${balance.toFixed(2)}
+              </td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${new Date(member.joinedDate).toLocaleDateString()}</td>
+            </tr>
+          `;
+        });
+        
+        html += `</tbody></table></div>`;
+        
+        reportDiv.innerHTML = html;
+        document.body.appendChild(reportDiv);
+        ExportManager.toPDF('member-report', 'member-directory', 'Member Directory Report');
+        setTimeout(() => { document.body.removeChild(reportDiv); hideExportProgress(); }, 1000);
+      } catch (error) {
+        console.error('PDF export error:', error);
+        alert('Error generating PDF');
+        hideExportProgress();
+      }
+    };
+
+    window.openAddMemberModal = openAddMemberModal;
+    window.closeAddMemberModal = closeAddMemberModal;
+  </script>
+  
+  <!-- ================ PWA INSTALL SCRIPT ================ -->
+  <script>
+    let deferredPrompt;
+    const installPrompt = document.getElementById('install-prompt');
+    const installBtn = document.getElementById('installBtn');
+    const installCloseBtn = document.getElementById('installCloseBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      setTimeout(() => {
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) return;
+        const lastDismissed = localStorage.getItem('pwa-install-dismissed');
+        if (lastDismissed) {
+          const daysAgo = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24);
+          if (daysAgo < 7) return;
+        }
+        installPrompt.classList.add('show');
+      }, 2000);
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('To install, use the browser menu: Add to Home Screen');
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`Install prompt outcome: ${outcome}`);
+      deferredPrompt = null;
+      installPrompt.classList.remove('show');
+    });
+
+    installCloseBtn.addEventListener('click', () => {
+      installPrompt.classList.remove('show');
+      localStorage.setItem('pwa-install-dismissed', Date.now());
+    });
+
+    window.addEventListener('appinstalled', (evt) => {
+      console.log('App was installed successfully');
+      installPrompt.classList.remove('show');
+      localStorage.removeItem('pwa-install-dismissed');
+    });
+
+    const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    const isInStandaloneMode = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (isIos() && !isInStandaloneMode()) {
+      setTimeout(() => {
+        if (!localStorage.getItem('ios-instructions-shown')) {
+          alert('📱 Install this app on iPhone:\n\n1. Tap Share button\n2. Scroll down\n3. Tap "Add to Home Screen"');
+          localStorage.setItem('ios-instructions-shown', Date.now());
+        }
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

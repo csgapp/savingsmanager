@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  
+  <!-- ================ PAGE TITLE ================ -->
+  <title>Admin Dashboard - Savings Group Manager</title>
+  
+  <!-- ================ PROFESSIONAL FAVICON ================ -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23183768'/><circle cx='50' cy='45' r='25' fill='%23FFD700'/><circle cx='35' cy='40' r='5' fill='%23333'/><circle cx='65' cy='40' r='5' fill='%23333'/><rect x='45' y='30' width='10' height='10' rx='2' fill='%2326A69A'/><circle cx='75' cy='25' r='8' fill='%23FFC107'/><text x='72' y='30' fill='%23183768' font-size='10'>K</text><path d='M20 70 L40 50 L60 60 L80 30' stroke='white' stroke-width='4' fill='none'/><polygon points='82,30 75,25 75,35' fill='white'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%23183768'/><circle cx='90' cy='81' r='45' fill='%23FFD700'/><circle cx='63' cy='72' r='9' fill='%23333'/><circle cx='117' cy='72' r='9' fill='%23333'/><rect x='81' y='54' width='18' height='18' rx='4' fill='%2326A69A'/><circle cx='135' cy='45' r='14' fill='%23FFC107'/><text x='130' y='52' fill='%23183768' font-size='18'>K</text><path d='M36 126 L72 90 L108 108 L144 54' stroke='white' stroke-width='8' fill='none'/><polygon points='148,54 136,45 136,63' fill='white'/></svg>">
+  <meta name="msapplication-TileColor" content="#183768">
+  <meta name="theme-color" content="#183768">
+  
+  <!-- ================ STYLESHEETS ================ -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    /* Additional admin-specific styles */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .action-card {
+      background: linear-gradient(135deg, var(--white) 0%, var(--off-white) 100%);
+      border: 1px solid var(--light-gray);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      transition: all var(--transition-normal);
+      cursor: pointer;
+    }
+    
+    .action-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--secondary);
+    }
+    
+    .export-section {
+      background: var(--off-white);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .export-btn {
+      background: white;
+      border: 2px solid var(--light-gray);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all var(--transition-fast);
+    }
+    
+    .export-btn:hover {
+      border-color: var(--secondary);
+      background: var(--off-white);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-active {
+      background: var(--success-light);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .close-modal {
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--dark-gray);
+    }
+    
+    .close-modal:hover {
+      color: var(--danger);
+    }
+    
+    #install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      padding: 20px;
+      display: none;
+      z-index: 10000;
+      border: 1px solid rgba(38, 166, 154, 0.3);
+      animation: slideUp 0.5s ease;
+    }
+    
+    #install-prompt.show {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .install-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #183768, #1e4282);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 28px;
+    }
+    
+    .install-content {
+      flex: 1;
+    }
+    
+    .install-title {
+      font-weight: 700;
+      color: #183768;
+      margin-bottom: 4px;
+    }
+    
+    .install-text {
+      font-size: 13px;
+      color: #6c757d;
+    }
+    
+    .install-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .install-btn {
+      background: linear-gradient(135deg, #26A69A, #1E7E74);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .install-close {
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ================ INSTALL APP PROMPT ================ -->
+  <div id="install-prompt">
+    <div class="install-icon">🏦</div>
+    <div class="install-content">
+      <div class="install-title">Install Savings Group Manager</div>
+      <div class="install-text">Add to home screen for quick access</div>
+    </div>
+    <div class="install-actions">
+      <button id="installBtn" class="install-btn">Install</button>
+      <button id="installCloseBtn" class="install-close">✕</button>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-brand">
+      <span style="font-size: 1.5rem; margin-right: 10px;">🏦</span>
+      Savings Group Manager - Admin
+    </div>
+    <div class="nav-links">
+      <a href="admin.html" class="active">Dashboard</a>
+      <a href="members.html">Members</a>
+      <a href="shareout.html">Share-Out</a>
+      <a href="history.html">History</a>
+      <a href="charts.html">Charts</a>
+      <span id="adminName" style="color: white; margin-left: 20px; padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.3);"></span>
+      <button id="logoutBtn" class="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Main Dashboard Container -->
+  <div class="dashboard-container">
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; padding: 30px; border-radius: var(--radius-lg); margin-bottom: 30px;">
+      <h1 style="color: white; margin-bottom: 10px;">Welcome back, <span id="adminWelcomeName">Admin</span>! 👋</h1>
+      <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem;">Here's what's happening with your savings group today.</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <div class="action-card" onclick="openAddMemberModal()">
+        <div style="font-size: 2rem; margin-bottom: 10px;">➕</div>
+        <h4>Add Member</h4>
+        <p>Register new member to the group</p>
+      </div>
+      <div class="action-card" onclick="openLoanModal()">
+        <div style="font-size: 2rem; margin-bottom: 10px;">💰</div>
+        <h4>Issue Loan</h4>
+        <p>Provide loan to existing member</p>
+      </div>
+      <div class="action-card" onclick="openFeeModal()">
+        <div style="font-size: 2rem; margin-bottom: 10px;">📋</div>
+        <h4>Charge Fee</h4>
+        <p>Membership or other fees</p>
+      </div>
+      <div class="action-card" onclick="window.location.href='shareout.html'">
+        <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
+        <h4>Share-Out</h4>
+        <p>Calculate group payouts</p>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid" id="dashboardStats">
+      <div class="stat-card">
+        <div style="font-size: 2.5rem; margin-bottom: 10px;">👥</div>
+        <h3>Total Members</h3>
+        <div id="totalMembers" class="stat-value">0</div>
+        <p style="color: var(--dark-gray); margin-top: 5px;">Active accounts</p>
+      </div>
+      <div class="stat-card">
+        <div style="font-size: 2.5rem; margin-bottom: 10px;">💵</div>
+        <h3>Total Savings</h3>
+        <div id="totalSavings" class="stat-value">K0</div>
+        <p style="color: var(--dark-gray); margin-top: 5px;">Group pool</p>
+      </div>
+      <div class="stat-card">
+        <div style="font-size: 2.5rem; margin-bottom: 10px;">📊</div>
+        <h3>Active Loans</h3>
+        <div id="activeLoans" class="stat-value">0</div>
+        <p style="color: var(--dark-gray); margin-top: 5px;">Value: <span id="activeLoanValue">K0</span></p>
+      </div>
+      <div class="stat-card">
+        <div style="font-size: 2.5rem; margin-bottom: 10px;">📈</div>
+        <h3>Total Interest</h3>
+        <div id="totalInterest" class="stat-value">K0</div>
+        <p style="color: var(--dark-gray); margin-top: 5px;">Earned to date</p>
+      </div>
+    </div>
+
+    <!-- ================ MEMBER MANAGEMENT SECTION ================ -->
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">👥 Member Management</h2>
+        <button onclick="openAddMemberModal()" class="btn-primary" style="width: auto;">+ Add New Member</button>
+      </div>
+      
+      <!-- Members Table -->
+      <div class="table-responsive">
+        <table id="membersTable">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Contact</th>
+              <th>Balance</th>
+              <th>Total Saved</th>
+              <th>Active Loans</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="membersTableBody"></tbody>
+        </table>
+      </div>
+      
+      <!-- Member Export Options -->
+      <div class="export-section">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="margin: 0;">📤 Export Member Data</h4>
+          <span style="color: var(--dark-gray); font-size: 0.85rem;">Download reports for record keeping</span>
+        </div>
+        <div class="export-grid">
+          <button onclick="exportMembersCSV()" class="export-btn">
+            <span style="font-size: 1.2rem;">📄</span>
+            <div style="text-align: left;">
+              <strong>CSV Export</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">Excel compatible</p>
+            </div>
+          </button>
+          <button onclick="exportMembersPDF()" class="export-btn">
+            <span style="font-size: 1.2rem;">📑</span>
+            <div style="text-align: left;">
+              <strong>PDF Report</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">Printable directory</p>
+            </div>
+          </button>
+          <button onclick="exportMemberCards()" class="export-btn">
+            <span style="font-size: 1.2rem;">🆔</span>
+            <div style="text-align: left;">
+              <strong>Member Cards</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">ID cards format</p>
+            </div>
+          </button>
+          <button onclick="exportMemberStats()" class="export-btn">
+            <span style="font-size: 1.2rem;">📊</span>
+            <div style="text-align: left;">
+              <strong>Statistics</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">Member analytics</p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================ 👑 ADMIN MANAGEMENT SECTION ================ -->
+    <div class="panel" id="adminManagementSection">
+      <h2>👑 Admin Management</h2>
+      <p style="color: var(--dark-gray); margin-bottom: 20px;">Create additional administrator accounts for other group leaders.</p>
+      
+      <div class="form-section">
+        <h3>Add New Administrator</h3>
+        <form id="addAdminForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" id="adminName" placeholder="Enter full name" required>
+            </div>
+            <div class="form-group">
+              <label>Email Address *</label>
+              <input type="email" id="adminEmail" placeholder="admin@example.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Temporary Password</label>
+              <input type="text" id="adminPassword" value="[Auto-generated on submit]" readonly>
+              <small style="color: var(--dark-gray);">Random secure password will be generated</small>
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" id="adminPhone" placeholder="+260 XXX XXX XXX">
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" style="background: var(--primary);">Create Administrator</button>
+        </form>
+      </div>
+      
+      <!-- Existing Admins List -->
+      <div class="table-responsive">
+        <h3 style="margin-bottom: 15px;">Current Administrators</h3>
+        <table id="adminsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Created</th>
+              <th>Last Login</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="adminsTableBody">
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 30px;">
+                <div style="font-size: 1.5rem; margin-bottom: 10px;">👑</div>
+                <p style="color: var(--dark-gray);">Loading administrators...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ================ LOAN MANAGEMENT SECTION ================ -->
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">💰 Loan Management</h2>
+        <button onclick="openLoanModal()" class="btn-primary" style="width: auto; background: var(--secondary);">+ Issue New Loan</button>
+      </div>
+      
+      <!-- Active Loans Table -->
+      <div class="table-responsive">
+        <table id="loansTable">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Amount</th>
+              <th>Issue Date</th>
+              <th>Interest Rate</th>
+              <th>Term</th>
+              <th>Monthly Payment</th>
+              <th>Remaining</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="loansTableBody">
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 40px;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">💰</div>
+                <p style="color: var(--dark-gray);">No active loans found</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Loan Export Options -->
+      <div class="export-section">
+        <div class="export-grid">
+          <button onclick="exportLoansCSV()" class="export-btn">
+            <span style="font-size: 1.2rem;">📄</span>
+            <div style="text-align: left;">
+              <strong>Export Loans CSV</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">All loans data</p>
+            </div>
+          </button>
+          <button onclick="exportActiveLoansPDF()" class="export-btn">
+            <span style="font-size: 1.2rem;">📑</span>
+            <div style="text-align: left;">
+              <strong>Active Loans PDF</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">Current portfolio</p>
+            </div>
+          </button>
+          <button onclick="exportLoanSchedule()" class="export-btn">
+            <span style="font-size: 1.2rem;">📅</span>
+            <div style="text-align: left;">
+              <strong>Repayment Schedule</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">Upcoming payments</p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================ QUICK REPORTS SECTION ================ -->
+    <div class="panel">
+      <h2>📊 Quick Reports & Analytics</h2>
+      <div class="export-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+        <button onclick="exportFinancialSummary()" class="export-btn" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border: none;">
+          <span style="font-size: 1.5rem;">💰</span>
+          <div style="text-align: left;">
+            <strong style="color: white;">Financial Summary</strong>
+            <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.9);">Complete financial report</p>
+          </div>
+        </button>
+        <button onclick="exportGroupPerformance()" class="export-btn" style="background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; border: none;">
+          <span style="font-size: 1.5rem;">📈</span>
+          <div style="text-align: left;">
+            <strong style="color: white;">Group Performance</strong>
+            <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.9);">KPIs and metrics</p>
+          </div>
+        </button>
+        <button onclick="exportAuditLog()" class="export-btn" style="background: linear-gradient(135deg, #6c757d, #495057); color: white; border: none;">
+          <span style="font-size: 1.5rem;">📋</span>
+          <div style="text-align: left;">
+            <strong style="color: white;">Audit Log</strong>
+            <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.9);">All transactions log</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================ ADD MEMBER MODAL ================ -->
+  <div id="addMemberModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Add New Member</h3>
+        <span class="close-modal" onclick="closeAddMemberModal()">&times;</span>
+      </div>
+      <form id="addMemberForm">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="modalMemberName" placeholder="Enter full name" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="modalMemberEmail" placeholder="member@example.com" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="modalMemberPhone" placeholder="+260 XXX XXX XXX">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Initial Savings (K)</label>
+            <input type="number" id="modalInitialSavings" value="0" min="0" step="100">
+          </div>
+          <div class="form-group">
+            <label>Monthly Installment (K)</label>
+            <input type="number" id="modalMonthlyInstallment" value="0" min="0" step="50">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Membership Fee (K)</label>
+          <input type="number" id="modalMembershipFee" value="50" readonly>
+          <small style="color: var(--dark-gray);">Annual fee - charged once</small>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Add Member</button>
+          <button type="button" onclick="closeAddMemberModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================ ISSUE LOAN MODAL ================ -->
+  <div id="loanModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Issue New Loan</h3>
+        <span class="close-modal" onclick="closeLoanModal()">&times;</span>
+      </div>
+      <form id="loanForm">
+        <div class="form-group">
+          <label>Select Member *</label>
+          <select id="modalLoanMemberSelect" required>
+            <option value="">-- Select member --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Loan Amount (K) *</label>
+          <input type="number" id="modalLoanAmount" min="100" step="100" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Interest Rate (%)</label>
+            <input type="number" id="modalLoanRate" value="15" step="0.1" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label>Term (months)</label>
+            <input type="number" id="modalLoanTerm" value="12" min="1" max="60">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Purpose</label>
+          <input type="text" id="modalLoanPurpose" placeholder="e.g., Business, Emergency, School fees">
+        </div>
+        <div id="loanCalculationPreview" style="background: var(--off-white); padding: 15px; border-radius: var(--radius-sm); margin: 15px 0;">
+          <p style="margin: 0 0 5px 0;"><strong>Payment Preview:</strong></p>
+          <p style="margin: 0; color: var(--primary-dark);" id="loanPreviewText">Enter amount to see monthly payment</p>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn-primary" style="flex: 1; background: var(--secondary);">Issue Loan</button>
+          <button type="button" onclick="closeLoanModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================ CHARGE FEE MODAL ================ -->
+  <div id="feeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Charge Fee</h3>
+        <span class="close-modal" onclick="closeFeeModal()">&times;</span>
+      </div>
+      <form id="feeForm">
+        <div class="form-group">
+          <label>Select Member *</label>
+          <select id="modalFeeMemberSelect" required>
+            <option value="">-- Select member --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fee Type *</label>
+          <select id="modalFeeType" required>
+            <option value="membership">Membership Fee (K50)</option>
+            <option value="other">Other Fee</option>
+            <option value="penalty">Penalty/Late Fee</option>
+            <option value="administrative">Administrative Fee</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (K) *</label>
+          <input type="number" id="modalFeeAmount" min="1" step="10" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="modalFeeDescription" placeholder="Reason for fee">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn-primary" style="flex: 1; background: var(--danger);">Charge Fee</button>
+          <button type="button" onclick="closeFeeModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Export Progress Indicator -->
+  <div id="exportProgress" class="export-progress">
+    <div class="spinner"></div>
+    <span>Generating your report...</span>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // ================ ADMIN DASHBOARD - COMPLETE ================
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication
+      if (!AuthManager.isAdmin()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Load admin data
+      loadAdminInfo();
+      loadDashboardStats();
+      loadMembersList();
+      loadLoansList();
+      loadAdminsList();
+      setupEventListeners();
+    });
+
+    // ================ SETUP EVENT LISTENERS ================
+    function setupEventListeners() {
+      // Logout
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        AuthManager.logout();
+      });
+
+      // Add Member Form
+      document.getElementById('addMemberForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleAddMember();
+      });
+
+      // Loan Form
+      document.getElementById('loanForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleIssueLoan();
+      });
+
+      // Fee Form
+      document.getElementById('feeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleChargeFee();
+      });
+
+      // Add Admin Form
+      const addAdminForm = document.getElementById('addAdminForm');
+      if (addAdminForm) {
+        addAdminForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          handleAddAdmin();
+        });
+      }
+
+      // Loan amount preview
+      document.getElementById('modalLoanAmount').addEventListener('input', updateLoanPreview);
+      document.getElementById('modalLoanRate').addEventListener('input', updateLoanPreview);
+      document.getElementById('modalLoanTerm').addEventListener('input', updateLoanPreview);
+    }
+
+    // ================ ADMIN INFO ================
+    function loadAdminInfo() {
+      const user = AuthManager.getCurrentUser();
+      if (user) {
+        document.getElementById('adminName').textContent = `👤 ${user.name || 'Admin'}`;
+        document.getElementById('adminWelcomeName').textContent = user.name?.split(' ')[0] || 'Admin';
+      }
+    }
+
+    // ================ DASHBOARD STATS ================
+    function loadDashboardStats() {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+      const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+      
+      const regularMembers = members.filter(m => m.role !== 'admin').length;
+      document.getElementById('totalMembers').textContent = regularMembers;
+      
+      const totalSavings = transactions
+        .filter(t => t.type === 'savings')
+        .reduce((sum, t) => sum + t.amount, 0);
+      document.getElementById('totalSavings').textContent = UIManager.formatCurrency(totalSavings);
+      
+      const activeLoans = loans.filter(l => l.status === 'active');
+      document.getElementById('activeLoans').textContent = activeLoans.length;
+      const activeLoanValue = activeLoans.reduce((sum, l) => sum + (l.remainingBalance || l.amount), 0);
+      document.getElementById('activeLoanValue').textContent = UIManager.formatCurrency(activeLoanValue);
+      
+      const totalInterest = loans
+        .filter(l => l.status === 'repaid')
+        .reduce((sum, l) => sum + (l.totalInterest || 0), 0);
+      document.getElementById('totalInterest').textContent = UIManager.formatCurrency(totalInterest);
+    }
+
+    // ================ MEMBERS MANAGEMENT ================
+    function loadMembersList() {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+      const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+      
+      const tbody = document.getElementById('membersTableBody');
+      tbody.innerHTML = '';
+      
+      populateMemberSelects(members);
+      
+      const regularMembers = members.filter(m => m.role !== 'admin');
+      
+      if (regularMembers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px;"><div style="font-size: 2rem; margin-bottom: 10px;">👥</div><p style="color: var(--dark-gray);">No members yet. Click "Add New Member" to get started.</p></td></tr>';
+        return;
+      }
+      
+      regularMembers.forEach(member => {
+        const memberTransactions = transactions.filter(t => t.memberId === member.id);
+        const memberLoans = loans.filter(l => l.memberId === member.id);
+        
+        const balance = memberTransactions.reduce((sum, t) => {
+          if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
+          if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+          return sum;
+        }, 0);
+        
+        const totalSavings = memberTransactions
+          .filter(t => t.type === 'savings')
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        const activeLoans = memberLoans.filter(l => l.status === 'active').length;
+        
+        let status = 'active';
+        let statusClass = 'status-active';
+        if (activeLoans > 2) {
+          status = 'high-risk';
+          statusClass = 'status-pending';
+        } else if (balance < 0) {
+          status = 'overdue';
+          statusClass = 'status-inactive';
+        }
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>
+            <strong>${member.name}</strong>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--dark-gray);">ID: ${member.id.slice(-6)}</p>
+          </td>
+          <td>
+            ${member.email}<br>
+            <span style="font-size: 0.8rem; color: var(--dark-gray);">${member.phone || 'No phone'}</span>
+          </td>
+          <td class="${balance >= 0 ? 'positive' : 'negative'}" style="font-weight: bold;">
+            ${UIManager.formatCurrency(balance)}
+          </td>
+          <td>${UIManager.formatCurrency(totalSavings)}</td>
+          <td>
+            <span class="status-badge ${activeLoans > 0 ? 'status-active' : ''}" style="${activeLoans === 0 ? 'background: var(--light-gray); color: var(--dark-gray);' : ''}">
+              ${activeLoans} ${activeLoans === 1 ? 'Loan' : 'Loans'}
+            </span>
+          </td>
+          <td><span class="status-badge ${statusClass}">${status}</span></td>
+          <td>${new Date(member.joinedDate).toLocaleDateString()}</td>
+          <td>
+            <button onclick="editMember('${member.id}')" class="btn-small" style="margin-right: 5px;">✏️</button>
+            <button onclick="viewMemberDetails('${member.id}')" class="btn-small">👁️</button>
+            <button onclick="recordSavings('${member.id}')" class="btn-small" style="background: var(--success);">💰</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function populateMemberSelects(members) {
+      const regularMembers = members.filter(m => m.role !== 'admin');
+      
+      const loanSelect = document.getElementById('modalLoanMemberSelect');
+      if (loanSelect) {
+        loanSelect.innerHTML = '<option value="">-- Select member --</option>';
+        regularMembers.forEach(member => {
+          const option = document.createElement('option');
+          option.value = member.id;
+          option.textContent = `${member.name} - ${member.email}`;
+          loanSelect.appendChild(option);
+        });
+      }
+      
+      const feeSelect = document.getElementById('modalFeeMemberSelect');
+      if (feeSelect) {
+        feeSelect.innerHTML = '<option value="">-- Select member --</option>';
+        regularMembers.forEach(member => {
+          const option = document.createElement('option');
+          option.value = member.id;
+          option.textContent = `${member.name} - ${member.email}`;
+          feeSelect.appendChild(option);
+        });
+      }
+    }
+
+    // ================ 👑 ADMIN MANAGEMENT ================
+    function loadAdminsList() {
+      const users = StorageManager.getItem(StorageManager.KEYS.USERS) || [];
+      const admins = users.filter(u => u.role === 'admin');
+      
+      const tbody = document.getElementById('adminsTableBody');
+      if (!tbody) return;
+      
+      tbody.innerHTML = '';
+      
+      if (admins.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;"><div style="font-size: 1.5rem; margin-bottom: 10px;">👑</div><p style="color: var(--dark-gray);">No administrators found</p></td></tr>';
+        return;
+      }
+      
+      admins.forEach(admin => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${admin.name || 'Administrator'}</strong></td>
+          <td>${admin.email}</td>
+          <td>${admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : '-'}</td>
+          <td>${admin.lastLogin ? new Date(admin.lastLogin).toLocaleString() : 'Never'}</td>
+          <td><span class="status-badge status-active">Active</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // ================ ✅ HANDLE ADD ADMIN - WITH RANDOM PASSWORD ================
+    function handleAddAdmin() {
+      // Generate a random secure password
+      const randomPassword = 
+        Math.random().toString(36).slice(-8) + // 8 random letters/numbers
+        Math.random().toString(36).toUpperCase().slice(-2) + // 2 uppercase
+        '!'; // special character
+      
+      const adminData = {
+        name: document.getElementById('adminName').value,
+        email: document.getElementById('adminEmail').value,
+        phone: document.getElementById('adminPhone').value,
+        password: randomPassword,
+        role: 'admin',
+        forcePasswordChange: true,
+        createdAt: new Date().toISOString()
+      };
+      
+      try {
+        // Check if email already exists
+        const users = StorageManager.getItem(StorageManager.KEYS.USERS) || [];
+        if (users.some(u => u.email === adminData.email)) {
+          UIManager.showToast('❌ A user with this email already exists', 'error');
+          return;
+        }
+        
+        // Create admin user
+        const newAdmin = StorageManager.createUser(adminData);
+        
+        // Also add as member
+        StorageManager.addMember({
+          name: adminData.name,
+          email: adminData.email,
+          phone: adminData.phone || '',
+          initialSavings: 0,
+          monthlyInstallment: 0,
+          role: 'admin',
+          password: randomPassword,
+          joinedDate: new Date().toISOString()
+        });
+        
+        // Show the generated password to the admin
+        UIManager.showToast(`✅ Administrator created! Temporary password: ${randomPassword}`, 'success', 8000);
+        
+        document.getElementById('addAdminForm').reset();
+        loadAdminsList();
+        loadMembersList();
+      } catch (error) {
+        console.error('Error creating admin:', error);
+        UIManager.showToast(error.message || 'Error creating administrator', 'error');
+      }
+    }
+
+    // ================ LOANS MANAGEMENT ================
+    function loadLoansList() {
+      const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      
+      const tbody = document.getElementById('loansTableBody');
+      tbody.innerHTML = '';
+      
+      const activeLoans = loans.filter(l => l.status === 'active');
+      
+      if (activeLoans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;"><div style="font-size: 2rem; margin-bottom: 10px;">💰</div><p style="color: var(--dark-gray);">No active loans found</p></td></tr>';
+        return;
+      }
+      
+      activeLoans.forEach(loan => {
+        const member = members.find(m => m.id === loan.memberId);
+        
+        if (!loan.monthlyPayment) {
+          const loanDetails = CalculationEngine.run('loan', {
+            loan: loan.amount,
+            r: loan.rate,
+            months: loan.term
+          });
+          loan.monthlyPayment = loanDetails.monthlyPayment;
+          loan.totalInterest = loanDetails.totalInterest;
+        }
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${member?.name || 'Unknown'}</strong></td>
+          <td style="font-weight: bold;">${UIManager.formatCurrency(loan.amount)}</td>
+          <td>${loan.issuedDate}</td>
+          <td>${(loan.rate * 100).toFixed(1)}%</td>
+          <td>${loan.term} months</td>
+          <td>${UIManager.formatCurrency(loan.monthlyPayment || 0)}</td>
+          <td style="font-weight: bold; color: var(--secondary);">${UIManager.formatCurrency(loan.remainingBalance || loan.amount)}</td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td>
+            <button onclick="recordLoanPayment('${loan.id}')" class="btn-small" style="background: var(--success);">💰 Pay</button>
+            <button onclick="viewLoanDetails('${loan.id}')" class="btn-small">📋</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // ================ MODAL FUNCTIONS ================
+    function openAddMemberModal() {
+      document.getElementById('addMemberModal').classList.add('active');
+    }
+
+    function closeAddMemberModal() {
+      document.getElementById('addMemberModal').classList.remove('active');
+      document.getElementById('addMemberForm').reset();
+    }
+
+    function openLoanModal() {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      populateMemberSelects(members);
+      document.getElementById('loanModal').classList.add('active');
+    }
+
+    function closeLoanModal() {
+      document.getElementById('loanModal').classList.remove('active');
+      document.getElementById('loanForm').reset();
+      document.getElementById('loanPreviewText').textContent = 'Enter amount to see monthly payment';
+    }
+
+    function openFeeModal() {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      populateMemberSelects(members);
+      document.getElementById('feeModal').classList.add('active');
+    }
+
+    function closeFeeModal() {
+      document.getElementById('feeModal').classList.remove('active');
+      document.getElementById('feeForm').reset();
+    }
+
+    // ================ FORM HANDLERS ================
+    function handleAddMember() {
+      const memberData = {
+        name: document.getElementById('modalMemberName').value,
+        email: document.getElementById('modalMemberEmail').value,
+        phone: document.getElementById('modalMemberPhone').value,
+        initialSavings: parseFloat(document.getElementById('modalInitialSavings').value) || 0,
+        monthlyInstallment: parseFloat(document.getElementById('modalMonthlyInstallment').value) || 0,
+        role: 'member',
+        password: 'member123'
+      };
+      
+      try {
+        const newMember = StorageManager.addMember(memberData);
+        
+        StorageManager.createUser({
+          name: memberData.name,
+          email: memberData.email,
+          password: memberData.password,
+          role: 'member'
+        });
+        
+        if (memberData.initialSavings > 0) {
+          StorageManager.addTransaction({
+            memberId: newMember.id,
+            type: 'savings',
+            amount: memberData.initialSavings,
+            description: 'Initial savings deposit'
+          });
+        }
+        
+        const feeAmount = parseFloat(document.getElementById('modalMembershipFee').value) || 50;
+        StorageManager.addTransaction({
+          memberId: newMember.id,
+          type: 'fee',
+          amount: -feeAmount,
+          description: 'Annual membership fee'
+        });
+        
+        UIManager.showToast('✅ Member added successfully!', 'success');
+        closeAddMemberModal();
+        loadDashboardStats();
+        loadMembersList();
+      } catch (error) {
+        UIManager.showToast(error.message, 'error');
+      }
+    }
+
+    function handleIssueLoan() {
+      const loanData = {
+        memberId: document.getElementById('modalLoanMemberSelect').value,
+        amount: parseFloat(document.getElementById('modalLoanAmount').value),
+        rate: parseFloat(document.getElementById('modalLoanRate').value) / 100,
+        term: parseInt(document.getElementById('modalLoanTerm').value),
+        purpose: document.getElementById('modalLoanPurpose').value || 'General purpose'
+      };
+      
+      if (!loanData.memberId || !loanData.amount || loanData.amount < 100) {
+        UIManager.showToast('Please select a member and enter a valid loan amount', 'error');
+        return;
+      }
+      
+      try {
+        const loan = StorageManager.addLoan(loanData);
+        UIManager.showToast('✅ Loan issued successfully!', 'success');
+        closeLoanModal();
+        loadDashboardStats();
+        loadLoansList();
+        loadMembersList();
+      } catch (error) {
+        UIManager.showToast(error.message, 'error');
+      }
+    }
+
+    function handleChargeFee() {
+      const feeData = {
+        memberId: document.getElementById('modalFeeMemberSelect').value,
+        type: 'fee',
+        amount: -parseFloat(document.getElementById('modalFeeAmount').value),
+        description: document.getElementById('modalFeeDescription').value || 
+                     `${document.getElementById('modalFeeType').options[document.getElementById('modalFeeType').selectedIndex].text}`
+      };
+      
+      if (!feeData.memberId || !feeData.amount) {
+        UIManager.showToast('Please select a member and enter a valid fee amount', 'error');
+        return;
+      }
+      
+      try {
+        StorageManager.addTransaction(feeData);
+        UIManager.showToast('✅ Fee charged successfully!', 'success');
+        closeFeeModal();
+        loadDashboardStats();
+        loadMembersList();
+      } catch (error) {
+        UIManager.showToast(error.message, 'error');
+      }
+    }
+
+    function updateLoanPreview() {
+      const amount = parseFloat(document.getElementById('modalLoanAmount').value);
+      const rate = parseFloat(document.getElementById('modalLoanRate').value) / 100;
+      const term = parseInt(document.getElementById('modalLoanTerm').value);
+      
+      if (amount && rate && term) {
+        const loanDetails = CalculationEngine.run('loan', {
+          loan: amount,
+          r: rate,
+          months: term
+        });
+        
+        document.getElementById('loanPreviewText').innerHTML = `
+          <strong>Monthly Payment:</strong> ${UIManager.formatCurrency(loanDetails.monthlyPayment)}<br>
+          <strong>Total Payment:</strong> ${UIManager.formatCurrency(loanDetails.totalPayment)}<br>
+          <strong>Total Interest:</strong> ${UIManager.formatCurrency(loanDetails.totalInterest)}
+        `;
+      }
+    }
+
+    // ================ MEMBER ACTIONS ================
+    window.editMember = function(memberId) {
+      alert('Edit member: ' + memberId);
+    };
+
+    window.viewMemberDetails = function(memberId) {
+      window.location.href = `member-portal.html?view=${memberId}`;
+    };
+
+    window.recordSavings = function(memberId) {
+      const amount = prompt('Enter savings amount (K):');
+      if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+        StorageManager.addTransaction({
+          memberId: memberId,
+          type: 'savings',
+          amount: parseFloat(amount),
+          description: 'Manual savings deposit'
+        });
+        loadMembersList();
+        loadDashboardStats();
+        UIManager.showToast('✅ Savings recorded successfully!', 'success');
+      }
+    };
+
+    window.recordLoanPayment = function(loanId) {
+      const amount = prompt('Enter payment amount (K):');
+      if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+        try {
+          StorageManager.recordLoanPayment(loanId, parseFloat(amount));
+          loadLoansList();
+          loadMembersList();
+          loadDashboardStats();
+          UIManager.showToast('✅ Payment recorded successfully!', 'success');
+        } catch (error) {
+          UIManager.showToast(error.message, 'error');
+        }
+      }
+    };
+
+    window.viewLoanDetails = function(loanId) {
+      alert('View loan details: ' + loanId);
+    };
+
+    // ================ EXPORT FUNCTIONS (STUBS) ================
+    function showExportProgress() {
+      document.getElementById('exportProgress').classList.add('active');
+    }
+
+    function hideExportProgress() {
+      setTimeout(() => {
+        document.getElementById('exportProgress').classList.remove('active');
+      }, 500);
+    }
+
+    window.exportMembersCSV = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportMembersPDF = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportMemberCards = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportMemberStats = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportLoansCSV = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportActiveLoansPDF = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportLoanSchedule = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportFinancialSummary = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportGroupPerformance = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    window.exportAuditLog = function() {
+      showExportProgress();
+      setTimeout(() => {
+        UIManager.showToast('Export feature ready - implement as needed', 'info');
+        hideExportProgress();
+      }, 500);
+    };
+
+    // Make functions globally available
+    window.openAddMemberModal = openAddMemberModal;
+    window.closeAddMemberModal = closeAddMemberModal;
+    window.openLoanModal = openLoanModal;
+    window.closeLoanModal = closeLoanModal;
+    window.openFeeModal = openFeeModal;
+    window.closeFeeModal = closeFeeModal;
+  </script>
+  
+  <!-- ================ PWA INSTALL SCRIPT ================ -->
+  <script>
+    let deferredPrompt;
+    const installPrompt = document.getElementById('install-prompt');
+    const installBtn = document.getElementById('installBtn');
+    const installCloseBtn = document.getElementById('installCloseBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      setTimeout(() => {
+        if (window.matchMedia('(display-mode: standalone)').matches || 
+            window.navigator.standalone === true) {
+          return;
+        }
+        const lastDismissed = localStorage.getItem('pwa-install-dismissed');
+        if (lastDismissed) {
+          const daysAgo = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24);
+          if (daysAgo < 7) return;
+        }
+        installPrompt.classList.add('show');
+      }, 2000);
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('To install, use the browser menu: Add to Home Screen');
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`Install prompt outcome: ${outcome}`);
+      deferredPrompt = null;
+      installPrompt.classList.remove('show');
+    });
+
+    installCloseBtn.addEventListener('click', () => {
+      installPrompt.classList.remove('show');
+      localStorage.setItem('pwa-install-dismissed', Date.now());
+    });
+
+    window.addEventListener('appinstalled', (evt) => {
+      console.log('App was installed successfully');
+      installPrompt.classList.remove('show');
+      localStorage.removeItem('pwa-install-dismissed');
+    });
+
+    const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    const isInStandaloneMode = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (isIos() && !isInStandaloneMode()) {
+      setTimeout(() => {
+        if (!localStorage.getItem('ios-instructions-shown')) {
+          alert('📱 Install this app on iPhone:\n\n1. Tap Share button\n2. Scroll down\n3. Tap "Add to Home Screen"');
+          localStorage.setItem('ios-instructions-shown', Date.now());
+        }
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

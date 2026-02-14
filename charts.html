@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  
+  <!-- ================ PAGE TITLE ================ -->
+  <title>Charts & Analytics - Savings Group Manager</title>
+  
+  <!-- ================ PROFESSIONAL FAVICON - INSTANT ================ -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23183768'/><circle cx='50' cy='45' r='25' fill='%23FFD700'/><circle cx='35' cy='40' r='5' fill='%23333'/><circle cx='65' cy='40' r='5' fill='%23333'/><rect x='45' y='30' width='10' height='10' rx='2' fill='%2326A69A'/><circle cx='75' cy='25' r='8' fill='%23FFC107'/><text x='72' y='30' fill='%23183768' font-size='10'>K</text><path d='M20 70 L40 50 L60 60 L80 30' stroke='white' stroke-width='4' fill='none'/><polygon points='82,30 75,25 75,35' fill='white'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%23183768'/><circle cx='90' cy='81' r='45' fill='%23FFD700'/><circle cx='63' cy='72' r='9' fill='%23333'/><circle cx='117' cy='72' r='9' fill='%23333'/><rect x='81' y='54' width='18' height='18' rx='4' fill='%2326A69A'/><circle cx='135' cy='45' r='14' fill='%23FFC107'/><text x='130' y='52' fill='%23183768' font-size='18'>K</text><path d='M36 126 L72 90 L108 108 L144 54' stroke='white' stroke-width='8' fill='none'/><polygon points='148,54 136,45 136,63' fill='white'/></svg>">
+  <meta name="msapplication-TileColor" content="#183768">
+  <meta name="theme-color" content="#183768">
+  
+  <!-- ================ STYLESHEETS ================ -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    .analytics-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .date-presets {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .preset-btn {
+      padding: 8px 16px;
+      border: 2px solid var(--light-gray);
+      border-radius: 20px;
+      background: white;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      font-size: 0.9rem;
+    }
+    
+    .preset-btn.active {
+      background: var(--secondary);
+      color: white;
+      border-color: var(--secondary);
+    }
+    
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .chart-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 25px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--light-gray);
+      transition: all var(--transition-normal);
+    }
+    
+    .chart-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--secondary-light);
+    }
+    
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .chart-title {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--primary-dark);
+    }
+    
+    .chart-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+    
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    
+    .kpi-card {
+      background: linear-gradient(135deg, var(--white), var(--off-white));
+      padding: 25px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--light-gray);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .kpi-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 30px;
+    }
+    
+    .kpi-content h4 {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--dark-gray);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      line-height: 1.2;
+    }
+    
+    .kpi-change {
+      font-size: 0.85rem;
+      color: var(--success);
+    }
+    
+    .data-table-container {
+      margin-top: 40px;
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 25px;
+    }
+    
+    .export-bar {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    
+    #install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      padding: 20px;
+      display: none;
+      z-index: 10000;
+      border: 1px solid rgba(38, 166, 154, 0.3);
+      animation: slideUp 0.5s ease;
+    }
+    
+    #install-prompt.show {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .install-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #183768, #1e4282);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 28px;
+    }
+    
+    .install-content {
+      flex: 1;
+    }
+    
+    .install-title {
+      font-weight: 700;
+      color: #183768;
+      margin-bottom: 4px;
+    }
+    
+    .install-text {
+      font-size: 13px;
+      color: #6c757d;
+    }
+    
+    .install-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .install-btn {
+      background: linear-gradient(135deg, #26A69A, #1E7E74);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .install-close {
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .analytics-header {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .kpi-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      #install-prompt {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ================ INSTALL APP PROMPT ================ -->
+  <div id="install-prompt">
+    <div class="install-icon">🏦</div>
+    <div class="install-content">
+      <div class="install-title">Install Savings Group Manager</div>
+      <div class="install-text">Add to home screen for quick access</div>
+    </div>
+    <div class="install-actions">
+      <button id="installBtn" class="install-btn">Install</button>
+      <button id="installCloseBtn" class="install-close">✕</button>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-brand">
+      <span style="font-size: 1.5rem; margin-right: 10px;">🏦</span>
+      Savings Group Manager
+    </div>
+    <div class="nav-links">
+      <a href="admin.html">Dashboard</a>
+      <a href="members.html">Members</a>
+      <a href="shareout.html">Share-Out</a>
+      <a href="history.html">History</a>
+      <a href="charts.html" class="active">Charts</a>
+      <button id="logoutBtn" class="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <div class="analytics-header">
+      <div>
+        <h1 style="margin-bottom: 5px;">📊 Analytics Dashboard</h1>
+        <p style="color: var(--dark-gray);">Visual insights into your savings group performance</p>
+      </div>
+      
+      <div class="date-presets">
+        <button class="preset-btn active" data-days="30">Last 30 Days</button>
+        <button class="preset-btn" data-days="90">Last 90 Days</button>
+        <button class="preset-btn" data-days="180">Last 6 Months</button>
+        <button class="preset-btn" data-days="365">Last Year</button>
+        <button class="preset-btn" data-days="all">All Time</button>
+      </div>
+    </div>
+    
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-content">
+          <h4>Total Members</h4>
+          <div class="kpi-value" id="kpiMembers">0</div>
+          <span class="kpi-change" id="memberChange">+0% vs last period</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-content">
+          <h4>Total Savings</h4>
+          <div class="kpi-value" id="kpiSavings">K0</div>
+          <span class="kpi-change" id="savingsChange">+0% vs last period</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-content">
+          <h4>Active Loans</h4>
+          <div class="kpi-value" id="kpiLoans">0</div>
+          <span class="kpi-change" id="loansValue">K0 outstanding</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-content">
+          <h4>Total Payouts</h4>
+          <div class="kpi-value" id="kpiPayouts">K0</div>
+          <span class="kpi-change" id="payoutsCount">0 calculations</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Export Bar -->
+    <div class="export-bar">
+      <button id="exportAllChartsBtn" class="btn-primary">
+        <span style="margin-right: 8px;">📑</span> Export All Charts (PDF)
+      </button>
+      <button id="exportDataCSVBtn" class="btn-secondary">
+        <span style="margin-right: 8px;">📄</span> Export Raw Data (CSV)
+      </button>
+    </div>
+    
+    <!-- Chart Grid -->
+    <div class="chart-grid">
+      <!-- Savings Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">💰 Savings Growth</h3>
+          <div class="chart-actions">
+            <button onclick="exportChartPNG('savingsChart')" class="btn-small">📸 PNG</button>
+            <button onclick="exportChartPDF('savingsChart')" class="btn-small">📑 PDF</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="savingsChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Loans Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">📊 Loan Portfolio</h3>
+          <div class="chart-actions">
+            <button onclick="exportChartPNG('loansChart')" class="btn-small">📸 PNG</button>
+            <button onclick="exportChartPDF('loansChart')" class="btn-small">📑 PDF</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="loansChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Payouts Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">📈 Share-Out Payouts</h3>
+          <div class="chart-actions">
+            <button onclick="exportChartPNG('payoutsChart')" class="btn-small">📸 PNG</button>
+            <button onclick="exportChartPDF('payoutsChart')" class="btn-small">📑 PDF</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="payoutsChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Method Distribution Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">🎯 Method Distribution</h3>
+          <div class="chart-actions">
+            <button onclick="exportChartPNG('methodChart')" class="btn-small">📸 PNG</button>
+            <button onclick="exportChartPDF('methodChart')" class="btn-small">📑 PDF</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="methodChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Top Members Table -->
+    <div class="data-table-container">
+      <h3 style="margin-bottom: 20px;">🏆 Top Contributors</h3>
+      <div class="table-responsive">
+        <table id="topMembersTable">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Total Saved</th>
+              <th>Current Balance</th>
+              <th>Loans Taken</th>
+              <th>Total Interest</th>
+            </tr>
+          </thead>
+          <tbody id="topMembersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Progress Indicator -->
+  <div id="exportProgress" class="export-progress">
+    <div class="spinner"></div>
+    <span>Generating your report...</span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!AuthManager.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      let charts = {};
+      let currentDays = 30;
+
+      initializeCharts();
+      loadData();
+      setupEventListeners();
+
+      function setupEventListeners() {
+        document.getElementById('logoutBtn').addEventListener('click', () => AuthManager.logout());
+        document.getElementById('exportAllChartsBtn').addEventListener('click', exportAllCharts);
+        document.getElementById('exportDataCSVBtn').addEventListener('click', exportRawData);
+        
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentDays = this.dataset.days === 'all' ? 'all' : parseInt(this.dataset.days);
+            updateCharts();
+          });
+        });
+      }
+
+      function initializeCharts() {
+        // Savings Chart
+        const savingsCtx = document.getElementById('savingsChart').getContext('2d');
+        charts.savings = new Chart(savingsCtx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [{
+              label: 'Total Savings',
+              data: [],
+              borderColor: '#26A69A',
+              backgroundColor: 'rgba(38, 166, 154, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `K${context.parsed.y.toFixed(2)}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return 'K' + value;
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        // Loans Chart
+        const loansCtx = document.getElementById('loansChart').getContext('2d');
+        charts.loans = new Chart(loansCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Active Loans', 'Repaid Loans', 'Pending'],
+            datasets: [{
+              data: [0, 0, 0],
+              backgroundColor: ['#26A69A', '#183768', '#FFC107'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `${context.label}: ${context.parsed} loans`;
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        // Payouts Chart
+        const payoutsCtx = document.getElementById('payoutsChart').getContext('2d');
+        charts.payouts = new Chart(payoutsCtx, {
+          type: 'bar',
+          data: {
+            labels: [],
+            datasets: [{
+              label: 'Monthly Payouts',
+              data: [],
+              backgroundColor: '#183768',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `K${context.parsed.y.toFixed(2)}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return 'K' + value;
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        // Method Distribution Chart
+        const methodCtx = document.getElementById('methodChart').getContext('2d');
+        charts.method = new Chart(methodCtx, {
+          type: 'pie',
+          data: {
+            labels: ['Compound', 'Simple', 'Flat', 'Declining', 'Tiered', 'Profit'],
+            datasets: [{
+              data: [0, 0, 0, 0, 0, 0],
+              backgroundColor: ['#26A69A', '#183768', '#FFC107', '#E91E63', '#9C27B0', '#FF9800'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      }
+
+      function loadData() {
+        updateCharts();
+        loadTopMembers();
+        updateKPIs();
+      }
+
+      function updateCharts() {
+        // Update savings chart
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const savingsByDate = {};
+        
+        transactions
+          .filter(t => t.type === 'savings')
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .forEach(t => {
+            const month = t.date.substring(0, 7);
+            savingsByDate[month] = (savingsByDate[month] || 0) + t.amount;
+          });
+        
+        const labels = Object.keys(savingsByDate).slice(-12);
+        const data = labels.map(l => savingsByDate[l]);
+        
+        charts.savings.data.labels = labels;
+        charts.savings.data.datasets[0].data = data;
+        charts.savings.update();
+
+        // Update loans chart
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const activeLoans = loans.filter(l => l.status === 'active').length;
+        const repaidLoans = loans.filter(l => l.status === 'repaid').length;
+        const pendingLoans = loans.filter(l => l.status === 'pending').length;
+        
+        charts.loans.data.datasets[0].data = [activeLoans, repaidLoans, pendingLoans];
+        charts.loans.update();
+
+        // Update payouts chart
+        const history = StorageManager.getItem(StorageManager.KEYS.SHAREOUT_HISTORY) || [];
+        const payoutsByMonth = {};
+        
+        history.forEach(h => {
+          const month = h.date.substring(0, 7);
+          payoutsByMonth[month] = (payoutsByMonth[month] || 0) + (h.payout || 0);
+        });
+        
+        const payoutLabels = Object.keys(payoutsByMonth).slice(-6);
+        const payoutData = payoutLabels.map(l => payoutsByMonth[l]);
+        
+        charts.payouts.data.labels = payoutLabels;
+        charts.payouts.data.datasets[0].data = payoutData;
+        charts.payouts.update();
+
+        // Update method distribution
+        const methodCounts = {
+          'compound': 0, 'simple': 0, 'flat': 0, 'declining': 0, 'tiered': 0, 'profit': 0
+        };
+        
+        history.forEach(h => {
+          const method = (h.method || '').toLowerCase();
+          if (method.includes('compound')) methodCounts.compound++;
+          else if (method.includes('simple')) methodCounts.simple++;
+          else if (method.includes('flat')) methodCounts.flat++;
+          else if (method.includes('declining')) methodCounts.declining++;
+          else if (method.includes('tiered')) methodCounts.tiered++;
+          else if (method.includes('profit')) methodCounts.profit++;
+        });
+        
+        charts.method.data.datasets[0].data = Object.values(methodCounts);
+        charts.method.update();
+      }
+
+      function loadTopMembers() {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        
+        const memberStats = members
+          .filter(m => m.role !== 'admin')
+          .map(member => {
+            const memberTransactions = transactions.filter(t => t.memberId === member.id);
+            const memberLoans = loans.filter(l => l.memberId === member.id);
+            
+            const totalSavings = memberTransactions
+              .filter(t => t.type === 'savings')
+              .reduce((sum, t) => sum + t.amount, 0);
+            
+            const balance = memberTransactions.reduce((sum, t) => {
+              if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
+              if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+              return sum;
+            }, 0);
+            
+            const loansTaken = memberLoans.length;
+            const totalInterest = memberLoans
+              .filter(l => l.status === 'repaid')
+              .reduce((sum, l) => sum + (l.totalInterest || 0), 0);
+            
+            return {
+              name: member.name,
+              totalSavings,
+              balance,
+              loansTaken,
+              totalInterest
+            };
+          })
+          .sort((a, b) => b.totalSavings - a.totalSavings)
+          .slice(0, 5);
+        
+        const tbody = document.getElementById('topMembersBody');
+        tbody.innerHTML = '';
+        
+        memberStats.forEach(stat => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><strong>${stat.name}</strong></td>
+            <td>${UIManager.formatCurrency(stat.totalSavings)}</td>
+            <td class="${stat.balance >= 0 ? 'positive' : 'negative'}">${UIManager.formatCurrency(stat.balance)}</td>
+            <td>${stat.loansTaken}</td>
+            <td>${UIManager.formatCurrency(stat.totalInterest)}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      function updateKPIs() {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const history = StorageManager.getItem(StorageManager.KEYS.SHAREOUT_HISTORY) || [];
+        
+        const totalMembers = members.filter(m => m.role !== 'admin').length;
+        const totalSavings = transactions.filter(t => t.type === 'savings').reduce((sum, t) => sum + t.amount, 0);
+        const activeLoans = loans.filter(l => l.status === 'active').length;
+        const totalPayouts = history.reduce((sum, h) => sum + (h.payout || 0), 0);
+        
+        document.getElementById('kpiMembers').textContent = totalMembers;
+        document.getElementById('kpiSavings').textContent = UIManager.formatCurrency(totalSavings);
+        document.getElementById('kpiLoans').textContent = activeLoans;
+        
+        const activeLoanValue = loans.filter(l => l.status === 'active').reduce((sum, l) => sum + (l.remainingBalance || l.amount), 0);
+        document.getElementById('loansValue').innerHTML = `${UIManager.formatCurrency(activeLoanValue)} outstanding`;
+        
+        document.getElementById('kpiPayouts').textContent = UIManager.formatCurrency(totalPayouts);
+        document.getElementById('payoutsCount').textContent = `${history.length} calculations`;
+        
+        // Calculate changes (simplified)
+        const previousPeriod = transactions.filter(t => {
+          const date = new Date(t.date);
+          const now = new Date();
+          const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+          return new Date(t.date) < monthAgo;
+        }).reduce((sum, t) => sum + t.amount, 0);
+        
+        const change = previousPeriod > 0 ? ((totalSavings - previousPeriod) / previousPeriod * 100).toFixed(1) : '0';
+        document.getElementById('savingsChange').textContent = `${change >= 0 ? '+' : ''}${change}% vs last period`;
+      }
+
+      // Export functions
+      function showExportProgress() {
+        document.getElementById('exportProgress').classList.add('active');
+      }
+
+      function hideExportProgress() {
+        setTimeout(() => document.getElementById('exportProgress').classList.remove('active'), 500);
+      }
+
+      window.exportChartPNG = function(chartId) {
+        showExportProgress();
+        try {
+          ExportManager.exportChart(chartId, `${chartId}-export`, 'png');
+          hideExportProgress();
+        } catch (error) {
+          console.error('Export error:', error);
+          alert('Error exporting chart');
+          hideExportProgress();
+        }
+      };
+
+      window.exportChartPDF = function(chartId) {
+        showExportProgress();
+        try {
+          ExportManager.exportChart(chartId, `${chartId}-export`, 'pdf');
+          hideExportProgress();
+        } catch (error) {
+          console.error('Export error:', error);
+          alert('Error exporting chart');
+          hideExportProgress();
+        }
+      };
+
+      function exportAllCharts() {
+        showExportProgress();
+        try {
+          const printWindow = window.open('', '_blank');
+          const charts = ['savingsChart', 'loansChart', 'payoutsChart', 'methodChart'];
+          let chartImages = [];
+          
+          charts.forEach(chartId => {
+            const canvas = document.getElementById(chartId);
+            if (canvas) {
+              chartImages.push(canvas.toDataURL('image/png'));
+            }
+          });
+          
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>All Charts Report</title>
+                <style>
+                  body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+                  h1 { color: #183768; }
+                  .chart-page { page-break-after: always; margin-bottom: 50px; }
+                  img { max-width: 100%; height: auto; margin: 20px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+                  .footer { margin-top: 50px; color: #666; font-size: 12px; }
+                </style>
+              </head>
+              <body>
+                <h1>Savings Group Manager - Analytics Report</h1>
+                <p>Generated: ${new Date().toLocaleString()}</p>
+                ${chartImages.map((img, i) => `
+                  <div class="chart-page">
+                    <h2>${charts[i].replace('Chart', '').toUpperCase()}</h2>
+                    <img src="${img}" style="width: 100%;">
+                  </div>
+                `).join('')}
+                <div class="footer">
+                  <p>Savings Group Manager - Confidential Analytics Report</p>
+                </div>
+                <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 500); };</script>
+              </body>
+            </html>
+          `);
+          printWindow.document.close();
+          hideExportProgress();
+        } catch (error) {
+          console.error('Export error:', error);
+          alert('Error exporting charts');
+          hideExportProgress();
+        }
+      }
+
+      function exportRawData() {
+        showExportProgress();
+        try {
+          const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+          const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+          const history = StorageManager.getItem(StorageManager.KEYS.SHAREOUT_HISTORY) || [];
+          
+          const data = [];
+          
+          // Add member summary
+          data.push({ 'Dataset': 'Members', 'Count': members.length, 'Value': '-', 'Date': new Date().toISOString().split('T')[0] });
+          data.push({ 'Dataset': 'Transactions', 'Count': transactions.length, 'Value': transactions.reduce((sum, t) => sum + t.amount, 0).toFixed(2), 'Date': '-' });
+          data.push({ 'Dataset': 'Loans', 'Count': loans.length, 'Value': loans.reduce((sum, l) => sum + l.amount, 0).toFixed(2), 'Date': '-' });
+          data.push({ 'Dataset': 'Share-Outs', 'Count': history.length, 'Value': history.reduce((sum, h) => sum + (h.payout || 0), 0).toFixed(2), 'Date': '-' });
+          
+          ExportManager.toCSV(data, 'analytics-raw-data');
+          hideExportProgress();
+        } catch (error) {
+          console.error('Export error:', error);
+          alert('Error exporting raw data');
+          hideExportProgress();
+        }
+      }
+
+      window.exportAllCharts = exportAllCharts;
+      window.exportRawData = exportRawData;
+    });
+  </script>
+  
+  <!-- ================ PWA INSTALL SCRIPT ================ -->
+  <script>
+    let deferredPrompt;
+    const installPrompt = document.getElementById('install-prompt');
+    const installBtn = document.getElementById('installBtn');
+    const installCloseBtn = document.getElementById('installCloseBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      setTimeout(() => {
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) return;
+        const lastDismissed = localStorage.getItem('pwa-install-dismissed');
+        if (lastDismissed) {
+          const daysAgo = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24);
+          if (daysAgo < 7) return;
+        }
+        installPrompt.classList.add('show');
+      }, 2000);
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('To install, use the browser menu: Add to Home Screen');
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`Install prompt outcome: ${outcome}`);
+      deferredPrompt = null;
+      installPrompt.classList.remove('show');
+    });
+
+    installCloseBtn.addEventListener('click', () => {
+      installPrompt.classList.remove('show');
+      localStorage.setItem('pwa-install-dismissed', Date.now());
+    });
+
+    window.addEventListener('appinstalled', (evt) => {
+      console.log('App was installed successfully');
+      installPrompt.classList.remove('show');
+      localStorage.removeItem('pwa-install-dismissed');
+    });
+
+    const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    const isInStandaloneMode = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (isIos() && !isInStandaloneMode()) {
+      setTimeout(() => {
+        if (!localStorage.getItem('ios-instructions-shown')) {
+          alert('📱 Install this app on iPhone:\n\n1. Tap Share button\n2. Scroll down\n3. Tap "Add to Home Screen"');
+          localStorage.setItem('ios-instructions-shown', Date.now());
+        }
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
