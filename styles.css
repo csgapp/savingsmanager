@@ -2,13 +2,13 @@
 
 /* ================ CSS VARIABLES & THEMING ================ */
 :root {
-  /* Primary Colors */
-  --primary-dark: #183768;
-  --primary: #1e4282;
-  --primary-light: #2a5aa0;
-  --secondary: #26A69A;
-  --secondary-dark: #1E7E74;
-  --secondary-light: #4DB6AC;
+  /* Primary Colors - Updated to teal (#20B2AA) */
+  --primary-dark: #1E7E74;
+  --primary: #20B2AA;
+  --primary-light: #4DB6AC;
+  --secondary: #2F2F2F;
+  --secondary-dark: #1a1a1a;
+  --secondary-light: #808080;
   
   /* Neutral Colors */
   --white: #FFFFFF;
@@ -40,10 +40,10 @@
   --spacing-xl: 32px;
   
   /* Effects */
-  --shadow-sm: 0 2px 4px rgba(24, 55, 104, 0.1);
-  --shadow-md: 0 4px 6px rgba(24, 55, 104, 0.15);
-  --shadow-lg: 0 10px 25px rgba(24, 55, 104, 0.2);
-  --shadow-hover: 0 8px 15px rgba(24, 55, 104, 0.25);
+  --shadow-sm: 0 2px 4px rgba(32, 178, 170, 0.1);
+  --shadow-md: 0 4px 6px rgba(32, 178, 170, 0.15);
+  --shadow-lg: 0 10px 25px rgba(32, 178, 170, 0.2);
+  --shadow-hover: 0 8px 15px rgba(32, 178, 170, 0.25);
   
   /* Border Radius */
   --radius-sm: 4px;
@@ -74,7 +74,7 @@ body {
 
 /* ================ TYPOGRAPHY ================ */
 h1, h2, h3, h4, h5, h6 {
-  color: var(--primary-dark);
+  color: var(--primary);
   margin-bottom: var(--spacing-md);
   font-weight: 600;
   line-height: 1.2;
@@ -92,7 +92,7 @@ p {
 
 /* ================ NAVIGATION ================ */
 nav, .admin-nav, .member-nav {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   padding: var(--spacing-md) var(--spacing-xl);
   display: flex;
   justify-content: space-between;
@@ -162,7 +162,7 @@ nav a.active::after, .nav-links a.active::after {
 
 .panel:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--secondary-light);
+  border-color: var(--primary-light);
 }
 
 .dashboard-container {
@@ -192,7 +192,7 @@ nav a.active::after, .nav-links a.active::after {
   left: 0;
   width: 100%;
   height: 4px;
-  background: linear-gradient(90deg, var(--secondary), var(--primary));
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
   transform: scaleX(0);
   transition: transform var(--transition-normal);
 }
@@ -200,7 +200,7 @@ nav a.active::after, .nav-links a.active::after {
 .card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-hover);
-  border-color: var(--secondary);
+  border-color: var(--primary);
 }
 
 .card:hover::before {
@@ -208,7 +208,7 @@ nav a.active::after, .nav-links a.active::after {
 }
 
 .card h3 {
-  color: var(--primary-dark);
+  color: var(--primary);
   margin-bottom: var(--spacing-md);
   font-size: 1.2rem;
   display: flex;
@@ -250,7 +250,7 @@ nav a.active::after, .nav-links a.active::after {
   right: 0;
   width: 100px;
   height: 100px;
-  background: linear-gradient(135deg, transparent 50%, rgba(38, 166, 154, 0.1) 100%);
+  background: linear-gradient(135deg, transparent 50%, rgba(32, 178, 170, 0.1) 100%);
   border-radius: 50%;
   transform: translate(30px, -30px);
 }
@@ -258,7 +258,7 @@ nav a.active::after, .nav-links a.active::after {
 .stat-card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--secondary);
+  border-color: var(--primary);
 }
 
 .stat-card h3 {
@@ -272,7 +272,7 @@ nav a.active::after, .nav-links a.active::after {
 .stat-value {
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: var(--primary);
   margin-bottom: var(--spacing-xs);
   line-height: 1;
 }
@@ -302,7 +302,7 @@ nav a.active::after, .nav-links a.active::after {
 
 label {
   font-weight: 600;
-  color: var(--primary-dark);
+  color: var(--primary);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -320,12 +320,12 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--secondary);
-  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.1);
 }
 
 input:hover, select:hover, textarea:hover {
-  border-color: var(--secondary-light);
+  border-color: var(--primary-light);
 }
 
 input::placeholder {
@@ -351,24 +351,24 @@ button, .btn-primary, .btn-secondary, .btn-danger, .btn-small {
 }
 
 .btn-primary, button:not(.btn-secondary):not(.btn-danger):not(.btn-small) {
-  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: var(--white);
   box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover, button:not(.btn-secondary):not(.btn-danger):not(.btn-small):hover {
-  background: linear-gradient(135deg, var(--secondary-dark) 0%, #166359 100%);
+  background: linear-gradient(135deg, var(--primary-dark) 0%, #166359 100%);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
   color: var(--white);
 }
 
 .btn-secondary:hover {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, #0e1f3a 100%);
+  background: linear-gradient(135deg, var(--secondary-dark) 0%, #000000 100%);
   transform: translateY(-2px);
 }
 
@@ -422,7 +422,7 @@ table {
 }
 
 thead {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: var(--white);
 }
 
@@ -500,7 +500,7 @@ tbody tr {
 
 /* ================ AUTH PAGES ================ */
 .auth-page {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -534,7 +534,7 @@ tbody tr {
 
 .auth-card h1 {
   text-align: center;
-  color: var(--primary-dark);
+  color: var(--primary);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -549,7 +549,7 @@ tbody tr {
 .forgot-link, .back-link {
   display: block;
   text-align: right;
-  color: var(--secondary);
+  color: var(--primary);
   text-decoration: none;
   font-size: 0.9rem;
   margin-top: var(--spacing-xs);
@@ -557,7 +557,7 @@ tbody tr {
 }
 
 .forgot-link:hover, .back-link:hover {
-  color: var(--secondary-dark);
+  color: var(--primary-dark);
   text-decoration: underline;
 }
 
@@ -609,7 +609,7 @@ tbody tr {
 }
 
 .member-input:hover {
-  border-color: var(--secondary);
+  border-color: var(--primary);
   box-shadow: var(--shadow-sm);
 }
 
@@ -631,7 +631,7 @@ tbody tr {
 
 .chart-container:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--secondary-light);
+  border-color: var(--primary-light);
 }
 
 /* ================ TRANSACTIONS ================ */
