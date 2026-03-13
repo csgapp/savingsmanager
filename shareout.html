@@ -97,6 +97,57 @@
       color: var(--black);
     }
     
+    /* Mobile input fixes */
+    @media (max-width: 768px) {
+      input, select, textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 16px; /* Prevents zoom on iOS */
+        -webkit-appearance: none;
+        border-radius: 8px;
+      }
+      
+      .form-row {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .form-group {
+        width: 100%;
+      }
+      
+      .result-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+      
+      .payout-amount {
+        font-size: 2rem;
+      }
+      
+      .radio-group {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .action-buttons button {
+        width: 100%;
+      }
+      
+      #install-prompt {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 15px;
+      }
+    }
+    
     #install-prompt {
       position: fixed;
       bottom: 20px;
@@ -182,28 +233,30 @@
       }
     }
     
-    @media (max-width: 768px) {
-      .result-header {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
-      }
-      
-      .payout-amount {
-        font-size: 2rem;
-      }
-      
-      .radio-group {
-        flex-direction: column;
-        gap: 10px;
-      }
-      
-      #install-prompt {
-        left: 10px;
-        right: 10px;
-        bottom: 10px;
-        padding: 15px;
-      }
+    /* Payment schedule table */
+    .payment-schedule {
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .payment-schedule table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .payment-schedule th {
+      background: var(--primary-dark);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    
+    .payment-schedule td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--light-gray);
     }
   </style>
 </head>
@@ -259,6 +312,7 @@
               <option value="declining">Declining Balance</option>
               <option value="tiered">Tiered Growth (Variable Rate)</option>
               <option value="profit">Profit-Sharing (30%)</option>
+              <option value="cumulative">Cumulative (10% on Remaining)</option>
             </select>
           </div>
         </div>
@@ -308,7 +362,7 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="action-buttons" style="display: flex; gap: 15px; margin-bottom: 30px;">
+      <div class="action-buttons" style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
         <button id="calculateBtn" class="btn-primary" style="flex: 1;">Calculate Payout</button>
         <button id="compareAllBtn" class="btn-secondary" style="flex: 1;">Compare All Methods</button>
         <button id="exportShareoutBtn" class="btn-primary" style="flex: 1; background: var(--primary);">📤 Export Results</button>
@@ -325,6 +379,23 @@
             <span class="payout-amount" id="payoutAmount">K0.00</span>
           </div>
           <div id="resultDetails" class="result-details"></div>
+          
+          <!-- Payment Schedule (shown for cumulative method) -->
+          <div id="paymentSchedule" class="payment-schedule" style="display: none; margin-top: 20px;">
+            <h4>Monthly Payment Schedule</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Payment</th>
+                  <th>Interest (10%)</th>
+                  <th>Principal</th>
+                  <th>Remaining</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleBody"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Comparison Table -->
@@ -347,7 +418,7 @@
         </div>
 
         <!-- Save to History -->
-        <div class="save-section" style="display: flex; gap: 15px; margin-top: 20px;">
+        <div class="save-section" style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
           <button id="saveToHistoryBtn" class="btn-secondary">💾 Save to History</button>
           <button id="printResultsBtn" class="btn-secondary">🖨️ Print Results</button>
         </div>
@@ -390,13 +461,148 @@
         return;
       }
 
+      // ================ CUMULATIVE CALCULATION FUNCTION ================
+      function calculateCumulative(principal, months, isInstallment = false, monthlyAmount = 0) {
+        if (isInstallment) {
+          // For installment payments (monthly contributions)
+          let balance = 0;
+          let totalInterest = 0;
+          let totalContributions = 0;
+          let schedule = [];
+          
+          for (let month = 1; month <= months; month++) {
+            // Add monthly contribution
+            balance += monthlyAmount;
+            totalContributions += monthlyAmount;
+            
+            // Calculate interest on current balance
+            const interest = balance * 0.10; // 10% on remaining
+            totalInterest += interest;
+            balance += interest;
+            
+            schedule.push({
+              month: month,
+              payment: monthlyAmount,
+              interest: interest,
+              principalAdded: monthlyAmount,
+              balance: balance
+            });
+          }
+          
+          return {
+            total: balance,
+            totalInterest: totalInterest,
+            totalContributions: totalContributions,
+            schedule: schedule
+          };
+        } else {
+          // For upfront lump sum
+          let balance = principal;
+          let totalInterest = 0;
+          let schedule = [];
+          
+          for (let month = 1; month <= months; month++) {
+            const interest = balance * 0.10; // 10% on remaining
+            totalInterest += interest;
+            balance += interest;
+            
+            schedule.push({
+              month: month,
+              interest: interest,
+              balance: balance
+            });
+          }
+          
+          return {
+            total: balance,
+            totalInterest: totalInterest,
+            principal: principal,
+            schedule: schedule
+          };
+        }
+      }
+
+      // ================ EXTEND CALCULATION ENGINE ================
+      if (!CalculationEngine) {
+        var CalculationEngine = {};
+      }
+
+      // Override or extend the run method
+      const originalRun = CalculationEngine.run;
+      
+      CalculationEngine.run = function(method, params) {
+        // Handle cumulative method
+        if (method === 'cumulative') {
+          if (params.P !== null && params.P !== undefined) {
+            // Upfront calculation
+            const result = calculateCumulative(params.P, params.n, false);
+            return result.total;
+          } else if (params.installment) {
+            // Installment calculation
+            const result = calculateCumulative(0, params.n, true, params.installment);
+            return result.total;
+          }
+          return 0;
+        }
+        
+        // For cumulative with schedule return (used in calculate button)
+        if (method === 'cumulative-with-schedule') {
+          if (params.P !== null && params.P !== undefined) {
+            return calculateCumulative(params.P, params.n, false);
+          } else if (params.installment) {
+            return calculateCumulative(0, params.n, true, params.installment);
+          }
+          return { total: 0, schedule: [] };
+        }
+        
+        // Use original for other methods
+        if (originalRun) {
+          return originalRun(method, params);
+        }
+        
+        // Fallback calculations for other methods
+        switch(method) {
+          case 'simple':
+            if (params.P !== null) return params.P * (1 + 0.10 * params.n / 12);
+            if (params.installment) {
+              let total = 0;
+              for (let i = 0; i < params.n; i++) {
+                total += params.installment * (1 + 0.10 * (params.n - i) / 12);
+              }
+              return total;
+            }
+            return 0;
+            
+          case 'compound':
+            if (params.P !== null) return params.P * Math.pow(1 + 0.10/12, params.n);
+            if (params.installment) {
+              let total = 0;
+              for (let i = 0; i < params.n; i++) {
+                total += params.installment * Math.pow(1 + 0.10/12, params.n - i);
+              }
+              return total;
+            }
+            return 0;
+            
+          case 'flat':
+            if (params.P !== null) return params.P * 1.20;
+            if (params.installment) return params.installment * params.n * 1.20;
+            return 0;
+            
+          default:
+            return params.P || 0;
+        }
+      };
+
+      // Method descriptions
       const methodDescriptions = {
         'simple': 'Simple Growth: Linear growth based on principal × (1 + rate × time). Best for short-term, predictable returns.',
         'compound': 'Compound Growth: Exponential growth with interest earning interest. Optimal for long-term wealth building.',
         'flat': 'Flat Return: Fixed 20% return regardless of time. Simple and predictable.',
         'declining': 'Declining Balance: Decreasing returns over time. Models depreciating assets.',
         'tiered': 'Tiered Growth: Higher rate (15%) in second half. Rewards long-term commitment.',
-        'profit': 'Profit-Sharing: Fixed 30% profit share. Models business profit distribution.'
+        'profit': 'Profit-Sharing: Fixed 30% profit share. Models business profit distribution.',
+        'cumulative': 'Cumulative Growth: 10% interest calculated on the remaining balance each month. Perfect for loans with partial payments.'
       };
 
       const methodSelector = document.getElementById('methodSelector');
@@ -446,14 +652,14 @@
           const member = members.find(m => m.id === memberId);
           memberName = member.name;
           
-          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS)
-            .filter(t => t.memberId === memberId);
+          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+          const memberTransactions = transactions.filter(t => t.memberId === memberId);
           
-          upfront = transactions
+          upfront = memberTransactions
             .filter(t => t.type === 'savings' && t.description?.includes('initial'))
             .reduce((sum, t) => sum + t.amount, 0);
           
-          const totalInstallments = transactions
+          const totalInstallments = memberTransactions
             .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
             .reduce((sum, t) => sum + t.amount, 0);
           
@@ -464,9 +670,68 @@
           memberName = 'Custom Calculation';
         }
         
-        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months });
-        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment });
-        const total = (upfrontResult || 0) + (installmentResult || 0);
+        // Hide payment schedule by default
+        document.getElementById('paymentSchedule').style.display = 'none';
+        
+        let upfrontResult = 0, installmentResult = 0;
+        let upfrontSchedule = [], installmentSchedule = [];
+        
+        // Special handling for cumulative method to get schedule
+        if (method === 'cumulative') {
+          if (upfront > 0) {
+            const upfrontData = calculateCumulative(upfront, months, false);
+            upfrontResult = upfrontData.total;
+            upfrontSchedule = upfrontData.schedule;
+          }
+          
+          if (installment > 0) {
+            const installmentData = calculateCumulative(0, months, true, installment);
+            installmentResult = installmentData.total;
+            installmentSchedule = installmentData.schedule;
+          }
+          
+          // Show payment schedule
+          if (upfrontSchedule.length > 0 || installmentSchedule.length > 0) {
+            document.getElementById('paymentSchedule').style.display = 'block';
+            const scheduleBody = document.getElementById('scheduleBody');
+            scheduleBody.innerHTML = '';
+            
+            // Show combined schedule (assuming upfront then installments)
+            if (upfront > 0) {
+              upfrontSchedule.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                  <td>${item.month}</td>
+                  <td>-</td>
+                  <td>${UIManager.formatCurrency(item.interest)}</td>
+                  <td>-</td>
+                  <td>${UIManager.formatCurrency(item.balance)}</td>
+                `;
+                scheduleBody.appendChild(row);
+              });
+            }
+            
+            if (installment > 0) {
+              installmentSchedule.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                  <td>${item.month}</td>
+                  <td>${UIManager.formatCurrency(item.payment)}</td>
+                  <td>${UIManager.formatCurrency(item.interest)}</td>
+                  <td>${UIManager.formatCurrency(item.principalAdded)}</td>
+                  <td>${UIManager.formatCurrency(item.balance)}</td>
+                `;
+                scheduleBody.appendChild(row);
+              });
+            }
+          }
+        } else {
+          // Regular calculation for other methods
+          upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
+          installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+        }
+        
+        const total = upfrontResult + installmentResult;
         const totalContributed = upfront + (installment * months);
         const returnPercent = totalContributed > 0 ? ((total - totalContributed) / totalContributed * 100).toFixed(1) : '0.0';
         
@@ -474,24 +739,51 @@
           methodSelector.options[methodSelector.selectedIndex].text;
         document.getElementById('payoutAmount').textContent = UIManager.formatCurrency(total);
         
-        document.getElementById('resultDetails').innerHTML = `
+        let detailsHtml = `
           <div class="detail-row">
             <span>Member:</span>
             <span><strong>${memberName}</strong></span>
           </div>
           <div class="detail-row">
             <span>Upfront Contribution:</span>
-            <span>${UIManager.formatCurrency(upfront)} → ${UIManager.formatCurrency(upfrontResult || 0)}</span>
+            <span>${UIManager.formatCurrency(upfront)} → ${UIManager.formatCurrency(upfrontResult)}</span>
           </div>
           <div class="detail-row">
             <span>Installment Contribution:</span>
-            <span>${UIManager.formatCurrency(installment * months)} (${UIManager.formatCurrency(installment)}/mo) → ${UIManager.formatCurrency(installmentResult || 0)}</span>
+            <span>${UIManager.formatCurrency(installment * months)} (${UIManager.formatCurrency(installment)}/mo) → ${UIManager.formatCurrency(installmentResult)}</span>
           </div>
+        `;
+        
+        // Add example for cumulative method
+        if (method === 'cumulative' && totalContributed > 0) {
+          detailsHtml += `
+            <div class="detail-row" style="background: var(--off-white); padding: 10px; margin-top: 10px;">
+              <span><strong>Example (K3,000 loan):</strong></span>
+              <span></span>
+            </div>
+            <div class="detail-row">
+              <span>Payment 1 (K2,000):</span>
+              <span>Interest K200, Principal K1,800, Remaining K1,200</span>
+            </div>
+            <div class="detail-row">
+              <span>Payment 2 (K1,000):</span>
+              <span>Interest K120, Principal K880, Remaining K320</span>
+            </div>
+            <div class="detail-row">
+              <span>Total Interest:</span>
+              <span>K320 (10.67%)</span>
+            </div>
+          `;
+        }
+        
+        detailsHtml += `
           <div class="detail-row total">
             <span>Total Return:</span>
             <span>${UIManager.formatCurrency(total - totalContributed)} (${returnPercent}%)</span>
           </div>
         `;
+        
+        document.getElementById('resultDetails').innerHTML = detailsHtml;
       });
 
       // Compare all methods
@@ -510,14 +802,14 @@
           
           const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS);
           const member = members.find(m => m.id === memberId);
-          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS)
-            .filter(t => t.memberId === memberId);
+          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+          const memberTransactions = transactions.filter(t => t.memberId === memberId);
           
-          upfront = transactions
+          upfront = memberTransactions
             .filter(t => t.type === 'savings' && t.description?.includes('initial'))
             .reduce((sum, t) => sum + t.amount, 0);
           
-          const totalInstallments = transactions
+          const totalInstallments = memberTransactions
             .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
             .reduce((sum, t) => sum + t.amount, 0);
           
@@ -527,14 +819,14 @@
           installment = parseFloat(document.getElementById('customInstallment').value) || 0;
         }
         
-        const methods = ['simple', 'compound', 'flat', 'declining', 'tiered', 'profit'];
+        const methods = ['simple', 'compound', 'flat', 'declining', 'tiered', 'profit', 'cumulative'];
         const results = [];
         let totalAll = 0;
         
         methods.forEach(method => {
-          const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months });
-          const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment });
-          const total = (upfrontResult || 0) + (installmentResult || 0);
+          const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
+          const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+          const total = upfrontResult + installmentResult;
           results.push({ method, upfrontResult, installmentResult, total });
           totalAll += total;
         });
@@ -546,11 +838,21 @@
         
         results.forEach(r => {
           const diff = r.total - avgTotal;
+          const methodNames = {
+            'simple': 'Simple Growth',
+            'compound': 'Compound Growth',
+            'flat': 'Flat Return',
+            'declining': 'Declining Balance',
+            'tiered': 'Tiered Growth',
+            'profit': 'Profit-Sharing',
+            'cumulative': 'Cumulative (10% on Remaining)'
+          };
+          
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td><strong>${methodDescriptions[r.method].split(':')[0]}</strong></td>
-            <td>${UIManager.formatCurrency(r.upfrontResult || 0)}</td>
-            <td>${UIManager.formatCurrency(r.installmentResult || 0)}</td>
+            <td><strong>${methodNames[r.method]}</strong></td>
+            <td>${UIManager.formatCurrency(r.upfrontResult)}</td>
+            <td>${UIManager.formatCurrency(r.installmentResult)}</td>
             <td>${UIManager.formatCurrency(r.total)}</td>
             <td class="${diff >= 0 ? 'positive' : 'negative'}">${diff >= 0 ? '+' : ''}${UIManager.formatCurrency(diff)}</td>
           `;
@@ -580,14 +882,14 @@
           const member = members.find(m => m.id === memberId);
           memberName = member.name;
           
-          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS)
-            .filter(t => t.memberId === memberId);
+          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+          const memberTransactions = transactions.filter(t => t.memberId === memberId);
           
-          upfront = transactions
+          upfront = memberTransactions
             .filter(t => t.type === 'savings' && t.description?.includes('initial'))
             .reduce((sum, t) => sum + t.amount, 0);
           
-          const totalInstallments = transactions
+          const totalInstallments = memberTransactions
             .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
             .reduce((sum, t) => sum + t.amount, 0);
           
@@ -597,9 +899,9 @@
           installment = parseFloat(document.getElementById('customInstallment').value) || 0;
         }
         
-        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months });
-        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment });
-        const total = (upfrontResult || 0) + (installmentResult || 0);
+        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
+        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+        const total = upfrontResult + installmentResult;
         
         const history = StorageManager.getItem(StorageManager.KEYS.SHAREOUT_HISTORY) || [];
         history.push({
@@ -640,10 +942,14 @@
           'Cycle (months)': months,
           'Upfront Contribution': upfront,
           'Installments Total': installment * months,
-          'Payout': total
+          'Payout': upfront + installment
         }];
         
-        ExportManager.toCSV(data, 'shareout-calculation');
+        if (window.ExportManager && ExportManager.toCSV) {
+          ExportManager.toCSV(data, 'shareout-calculation');
+        } else {
+          alert('Export feature not available');
+        }
       });
 
       // Print results
@@ -677,9 +983,9 @@
           
           const installment = months > 0 ? totalInstallments / months : 0;
           
-          const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months });
-          const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment });
-          const total = (upfrontResult || 0) + (installmentResult || 0);
+          const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
+          const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+          const total = upfrontResult + installmentResult;
           
           if (total > highestPayout) highestPayout = total;
           totalPayout += total;
@@ -689,20 +995,23 @@
             <td><strong>${member.name}</strong></td>
             <td>${UIManager.formatCurrency(upfront)}</td>
             <td>${UIManager.formatCurrency(totalInstallments)}</td>
-            <td>${UIManager.formatCurrency(upfrontResult || 0)}</td>
-            <td>${UIManager.formatCurrency(installmentResult || 0)}</td>
+            <td>${UIManager.formatCurrency(upfrontResult)}</td>
+            <td>${UIManager.formatCurrency(installmentResult)}</td>
             <td><strong>${UIManager.formatCurrency(total)}</strong></td>
           `;
           tbody.appendChild(row);
         });
         
-        document.getElementById('summaryRow').innerHTML = `
-          <tr>
-            <td colspan="6" style="text-align: right; font-weight: bold;">
-              Total Payout: ${UIManager.formatCurrency(totalPayout)} | Highest: ${UIManager.formatCurrency(highestPayout)}
-            </td>
-          </tr>
-        `;
+        const summaryRow = document.getElementById('summaryRow');
+        if (summaryRow) {
+          summaryRow.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: right; font-weight: bold;">
+                Total Payout: ${UIManager.formatCurrency(totalPayout)} | Highest: ${UIManager.formatCurrency(highestPayout)}
+              </td>
+            </tr>
+          `;
+        }
       }
 
       // Initialize
@@ -712,7 +1021,15 @@
       // Event listeners
       methodSelector.addEventListener('change', loadAllMembersResults);
       document.getElementById('months').addEventListener('input', loadAllMembersResults);
-      document.getElementById('logoutBtn').addEventListener('click', () => AuthManager.logout());
+      
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          if (AuthManager && AuthManager.logout) {
+            AuthManager.logout();
+          }
+        });
+      }
     });
   </script>
   
