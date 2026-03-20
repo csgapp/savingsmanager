@@ -300,7 +300,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Cycle Length (months)</label>
-            <input type="number" id="months" value="8" min="1" max="60" required>
+            <input type="number" id="months" value="8" min="1" max="60" step="1" required>
           </div>
           
           <div class="form-group">
@@ -636,7 +636,7 @@
       // Calculate single method
       document.getElementById('calculateBtn').addEventListener('click', function() {
         const method = methodSelector.value;
-        const months = parseInt(document.getElementById('months').value) || 8;
+        const months = Number(document.getElementById('months').value) || 8;
         const calcType = document.querySelector('input[name="calcType"]:checked').value;
         
         let upfront = 0, installment = 0, memberName = 'Custom Calculation';
@@ -788,7 +788,7 @@
 
       // Compare all methods
       document.getElementById('compareAllBtn').addEventListener('click', function() {
-        const months = parseInt(document.getElementById('months').value) || 8;
+        const months = Number(document.getElementById('months').value) || 8;
         const calcType = document.querySelector('input[name="calcType"]:checked').value;
         
         let upfront = 0, installment = 0;
@@ -865,7 +865,7 @@
       // Save to history
       document.getElementById('saveToHistoryBtn').addEventListener('click', function() {
         const method = methodSelector.value;
-        const months = parseInt(document.getElementById('months').value) || 8;
+        const months = Number(document.getElementById('months').value) || 8;
         const calcType = document.querySelector('input[name="calcType"]:checked').value;
         
         let memberName = 'Custom Calculation';
@@ -921,7 +921,7 @@
       // Export results
       document.getElementById('exportShareoutBtn').addEventListener('click', function() {
         const method = methodSelector.value;
-        const months = parseInt(document.getElementById('months').value) || 8;
+        const months = Number(document.getElementById('months').value) || 8;
         const calcType = document.querySelector('input[name="calcType"]:checked').value;
         
         let upfront = 0, installment = 0, memberName = 'Custom Calculation';
@@ -960,7 +960,7 @@
       // Load all members results
       function loadAllMembersResults() {
         const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
-        const months = parseInt(document.getElementById('months').value) || 8;
+        const months = Number(document.getElementById('months').value) || 8;
         const method = methodSelector.value;
         const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
         
@@ -992,12 +992,12 @@
           
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td><strong>${member.name}</strong></td>
-            <td>${UIManager.formatCurrency(upfront)}</td>
-            <td>${UIManager.formatCurrency(totalInstallments)}</td>
-            <td>${UIManager.formatCurrency(upfrontResult)}</td>
-            <td>${UIManager.formatCurrency(installmentResult)}</td>
-            <td><strong>${UIManager.formatCurrency(total)}</strong></td>
+            <td><strong>${member.name}</strong>\\
+            <td>${UIManager.formatCurrency(upfront)}\\
+            <td>${UIManager.formatCurrency(totalInstallments)}\\
+            <td>${UIManager.formatCurrency(upfrontResult)}\\
+            <td>${UIManager.formatCurrency(installmentResult)}\\
+            <td><strong>${UIManager.formatCurrency(total)}</strong>\\
           `;
           tbody.appendChild(row);
         });
@@ -1005,11 +1005,11 @@
         const summaryRow = document.getElementById('summaryRow');
         if (summaryRow) {
           summaryRow.innerHTML = `
-            <tr>
+             <tr>
               <td colspan="6" style="text-align: right; font-weight: bold;">
                 Total Payout: ${UIManager.formatCurrency(totalPayout)} | Highest: ${UIManager.formatCurrency(highestPayout)}
-              </td>
-            </tr>
+               </td>
+             </tr>
           `;
         }
       }
