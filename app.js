@@ -23,19 +23,20 @@ const CONFIG = {
 // ================ CORE CALCULATION ENGINE ================
 const CalculationEngine = {
   run(method, { P, r, n, upfront, installment, loan = 0, months = 0 }) {
-    r = r || CONFIG.INTEREST_RATE;
-    
-    switch (method) {
-      case "simple": return this.simple(P, r, n, installment);
-      case "compound": return this.compound(P, r, n, installment);
-      case "flat": return this.flat(P, installment, n);
-      case "declining": return this.declining(P, r, n, installment);
-      case "tiered": return this.tiered(P, r, n, installment);
-      case "profit": return this.profit(P, installment, n);
-      case "loan": return this.calculateLoan(loan, r, months);
-      default: return 0;
-    }
-  },
+  r = r || CONFIG.INTEREST_RATE;
+  
+  switch (method) {
+    case "simple": return this.simple(P, r, n, installment);
+    case "compound": return this.compound(P, r, n, installment);
+    case "flat": return this.flat(P, installment, n);
+    case "declining": return this.declining(P, r, n, installment);
+    case "tiered": return this.tiered(P, r, n, installment);
+    case "profit": return this.profit(P, installment, n);
+    case "loan": return this.calculateLoan(loan, r, months);
+    case "cumulative": return this.cumulative(P, r, n, installment);  // ← ADD THIS LINE
+    default: return 0;
+  }
+},
 
   simple(P, r, n, installment) {
     if (P) return P * (1 + r * n);
@@ -76,6 +77,52 @@ const CalculationEngine = {
     if (installment) return (installment * n) + (installment * n * 0.30);
     return 0;
   },
+
+  // Add this inside the CalculationEngine object, after the existing methods
+
+cumulative(P, r, n, installment) {
+  // 10% interest on remaining balance each month
+  const monthlyRate = 0.10; // Fixed 10% as per your requirement
+  
+  if (P && P > 0) {
+    // For upfront lump sum
+    let balance = P;
+    let totalInterest = 0;
+    
+    for (let month = 1; month <= n; month++) {
+      const interest = balance * monthlyRate;
+      totalInterest += interest;
+      balance += interest;
+    }
+    
+    return balance;
+  }
+  
+  if (installment && installment > 0) {
+    // For monthly contributions (installments)
+    let balance = 0;
+    let totalInterest = 0;
+    let totalContributions = 0;
+    
+    for (let month = 1; month <= n; month++) {
+      // Add contribution at start of month
+      balance += installment;
+      totalContributions += installment;
+      
+      // Calculate interest on current balance
+      const interest = balance * monthlyRate;
+      totalInterest += interest;
+      balance += interest;
+    }
+    
+    return balance;
+  }
+  
+  return 0;
+},
+
+// Also update the run method to include cumulative
+// Find the run method and add 'cumulative' case
 
   calculateLoan(principal, rate, months) {
     if (!principal || principal <= 0) return { monthlyPayment: 0, totalPayment: 0, totalInterest: 0 };
@@ -1044,4 +1091,26 @@ function initHistoryPage() {}
 function initChartsPage() {}
 function initAdminPage() {}
 function initMemberPortalPage() {}
-function initSetupPage() {}
+function initSetupPage() {}..Have I pasted in right places?
+Yes! You've pasted it perfectly! ✅ Your app.js now has the cumulative method correctly added. I can see both:
+
+The cumulative method (around line 100-140) - correctly added after the profit method
+
+The run method (around line 30-50) - correctly includes case "cumulative": return this.cumulative(P, r, n, installment);
+
+Your CalculationEngine section now looks like this:
+
+javascript
+const CalculationEngine = {
+  run(method, { P, r, n, upfront, installment, loan = 0, months = 0 }) {
+    // ... includes "cumulative" case ✅
+  },
+  simple() { ... },
+  compound() { ... },
+  flat() { ... },
+  declining() { ... },
+  tiered() { ... },
+  profit() { ... },
+  cumulative(P, r, n, installment) { ... }, // ✅ Added correctly
+  calculateLoan() { ... }
+};
