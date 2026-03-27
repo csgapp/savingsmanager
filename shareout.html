@@ -461,66 +461,68 @@
         return;
       }
 
-      // ================ CUMULATIVE CALCULATION FUNCTION ================
-      function calculateCumulative(principal, months, isInstallment = false, monthlyAmount = 0) {
-        if (isInstallment) {
-          // For installment payments (monthly contributions)
-          let balance = 0;
-          let totalInterest = 0;
-          let totalContributions = 0;
-          let schedule = [];
-          
-          for (let month = 1; month <= months; month++) {
-            // Add monthly contribution
-            balance += monthlyAmount;
-            totalContributions += monthlyAmount;
-            
-            // Calculate interest on current balance
-            const interest = balance * 0.10; // 10% on remaining
-            totalInterest += interest;
-            balance += interest;
-            
-            schedule.push({
-              month: month,
-              payment: monthlyAmount,
-              interest: interest,
-              principalAdded: monthlyAmount,
-              balance: balance
-            });
-          }
-          
-          return {
-            total: balance,
-            totalInterest: totalInterest,
-            totalContributions: totalContributions,
-            schedule: schedule
-          };
-        } else {
-          // For upfront lump sum
-          let balance = principal;
-          let totalInterest = 0;
-          let schedule = [];
-          
-          for (let month = 1; month <= months; month++) {
-            const interest = balance * 0.10; // 10% on remaining
-            totalInterest += interest;
-            balance += interest;
-            
-            schedule.push({
-              month: month,
-              interest: interest,
-              balance: balance
-            });
-          }
-          
-          return {
-            total: balance,
-            totalInterest: totalInterest,
-            principal: principal,
-            schedule: schedule
-          };
-        }
-      }
+      // ================ CUMULATIVE CALCULATION FUNCTION - FIXED ================
+function calculateCumulative(principal, months, isInstallment = false, monthlyAmount = 0) {
+  const monthlyRate = 0.10; // 10% interest per month on remaining balance
+  
+  if (!isInstallment) {
+    // For upfront lump sum (like K20,000 savings)
+    let balance = principal;
+    let totalInterest = 0;
+    let schedule = [];
+    
+    for (let month = 1; month <= months; month++) {
+      const interest = balance * monthlyRate;
+      totalInterest += interest;
+      balance += interest;
+      
+      schedule.push({
+        month: month,
+        interest: interest,
+        balance: balance
+      });
+    }
+    
+    return {
+      total: balance,
+      totalInterest: totalInterest,
+      principal: principal,
+      schedule: schedule
+    };
+  } else {
+    // For monthly contributions (installments)
+    let balance = 0;
+    let totalInterest = 0;
+    let totalContributions = 0;
+    let schedule = [];
+    
+    for (let month = 1; month <= months; month++) {
+      // Add monthly contribution at start of month
+      balance += monthlyAmount;
+      totalContributions += monthlyAmount;
+      
+      // Calculate interest on current balance
+      const interest = balance * monthlyRate;
+      totalInterest += interest;
+      balance += interest;
+      
+      schedule.push({
+        month: month,
+        payment: monthlyAmount,
+        interest: interest,
+        principalAdded: monthlyAmount,
+        balance: balance
+      });
+    }
+    
+    return {
+      total: balance,
+      totalInterest: totalInterest,
+      totalContributions: totalContributions,
+      schedule: schedule
+    };
+  }
+}
 
       // ================ EXTEND CALCULATION ENGINE ================
       if (!CalculationEngine) {
