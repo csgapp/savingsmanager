@@ -1,4 +1,3 @@
-
 // ================ SAVINGS GROUP MANAGER - CORE SYSTEM ================
 // Version: 3.0.0 - PRODUCTION READY
 // Features: Auth, Members, Loans, Fees, Share-Out, Exports, Session Management
@@ -24,20 +23,20 @@ const CONFIG = {
 // ================ CORE CALCULATION ENGINE ================
 const CalculationEngine = {
   run(method, { P, r, n, upfront, installment, loan = 0, months = 0 }) {
-  r = r || CONFIG.INTEREST_RATE;
-  
-  switch (method) {
-    case "simple": return this.simple(P, r, n, installment);
-    case "compound": return this.compound(P, r, n, installment);
-    case "flat": return this.flat(P, installment, n);
-    case "declining": return this.declining(P, r, n, installment);
-    case "tiered": return this.tiered(P, r, n, installment);
-    case "profit": return this.profit(P, installment, n);
-    case "loan": return this.calculateLoan(loan, r, months);
-    case "cumulative": return this.cumulative(P, r, n, installment);  // ← ADD THIS LINE
-    default: return 0;
-  }
-},
+    r = r || CONFIG.INTEREST_RATE;
+    
+    switch (method) {
+      case "simple": return this.simple(P, r, n, installment);
+      case "compound": return this.compound(P, r, n, installment);
+      case "flat": return this.flat(P, installment, n);
+      case "declining": return this.declining(P, r, n, installment);
+      case "tiered": return this.tiered(P, r, n, installment);
+      case "profit": return this.profit(P, installment, n);
+      case "loan": return this.calculateLoan(loan, r, months);
+      case "cumulative": return this.cumulative(P, r, n, installment);
+      default: return 0;
+    }
+  },
 
   simple(P, r, n, installment) {
     if (P) return P * (1 + r * n);
@@ -79,51 +78,31 @@ const CalculationEngine = {
     return 0;
   },
 
-  // Add this inside the CalculationEngine object, after the existing methods
-
-cumulative(P, r, n, installment) {
-  // 10% interest on remaining balance each month
-  const monthlyRate = 0.10; // Fixed 10% as per your requirement
-  
-  if (P && P > 0) {
-    // For upfront lump sum
-    let balance = P;
-    let totalInterest = 0;
+  // Cumulative method - 10% interest on remaining balance each month
+  cumulative(P, r, n, installment) {
+    const monthlyRate = 0.10; // 10% interest on remaining balance
     
-    for (let month = 1; month <= n; month++) {
-      const interest = balance * monthlyRate;
-      totalInterest += interest;
-      balance += interest;
+    if (P && P > 0) {
+      // For upfront lump sum (like savings)
+      let balance = P;
+      for (let month = 1; month <= n; month++) {
+        balance += balance * monthlyRate;
+      }
+      return balance;
     }
     
-    return balance;
-  }
-  
-  if (installment && installment > 0) {
-    // For monthly contributions (installments)
-    let balance = 0;
-    let totalInterest = 0;
-    let totalContributions = 0;
-    
-    for (let month = 1; month <= n; month++) {
-      // Add contribution at start of month
-      balance += installment;
-      totalContributions += installment;
-      
-      // Calculate interest on current balance
-      const interest = balance * monthlyRate;
-      totalInterest += interest;
-      balance += interest;
+    if (installment && installment > 0) {
+      // For monthly contributions (installments)
+      let balance = 0;
+      for (let month = 1; month <= n; month++) {
+        balance += installment;              // Add monthly contribution
+        balance += balance * monthlyRate;    // Add interest on current balance
+      }
+      return balance;
     }
     
-    return balance;
-  }
-  
-  return 0;
-},
-
-// Also update the run method to include cumulative
-// Find the run method and add 'cumulative' case
+    return 0;
+  },
 
   calculateLoan(principal, rate, months) {
     if (!principal || principal <= 0) return { monthlyPayment: 0, totalPayment: 0, totalInterest: 0 };
@@ -480,12 +459,12 @@ const AuthManager = {
 
   isAdmin() {
     const user = this.getCurrentUser();
-    return user?.role === 'admin';
+    return user && user.role === 'admin';
   },
 
   isMember() {
     const user = this.getCurrentUser();
-    return user?.role === 'member';
+    return user && user.role === 'member';
   },
 
   requestPasswordReset(email) {
@@ -877,7 +856,7 @@ const ExportManager = {
           <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
             <div>
               <p><strong>Generated:</strong> ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</p>
-              <p><strong>User:</strong> ${user?.name || 'System'}</p>
+              <p><strong>User:</strong> ${user && user.name ? user.name : 'System'}</p>
               <p><strong>App:</strong> ${CONFIG.APP_NAME} v${CONFIG.VERSION}</p>
             </div>
           </div>
@@ -1024,8 +1003,8 @@ const ExportManager = {
       const member = members.find(m => m.id === loan.memberId);
       return {
         'Loan ID': loan.id.slice(-8),
-        'Member Name': member?.name || 'Unknown',
-        'Member Email': member?.email || 'Unknown',
+        'Member Name': member ? member.name : 'Unknown',
+        'Member Email': member ? member.email : 'Unknown',
         'Loan Amount (K)': loan.amount.toFixed(2),
         'Interest Rate (%)': (loan.rate * 100).toFixed(1),
         'Term (months)': loan.term,
@@ -1046,7 +1025,7 @@ const ExportManager = {
       return {
         'Date': t.date,
         'Time': t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : '-',
-        'Member': member?.name || 'System',
+        'Member': member ? member.name : 'System',
         'Transaction Type': t.type.toUpperCase(),
         'Amount (K)': Math.abs(t.amount).toFixed(2),
         'Direction': t.amount > 0 ? 'CREDIT' : 'DEBIT',
@@ -1092,4 +1071,4 @@ function initHistoryPage() {}
 function initChartsPage() {}
 function initAdminPage() {}
 function initMemberPortalPage() {}
-function initSetupPage() {}..Have I pasted in right places?
+function initSetupPage() {}
