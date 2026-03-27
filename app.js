@@ -1,3 +1,4 @@
+
 // ================ SAVINGS GROUP MANAGER - CORE SYSTEM ================
 // Version: 3.0.0 - PRODUCTION READY
 // Features: Auth, Members, Loans, Fees, Share-Out, Exports, Session Management
@@ -1092,25 +1093,3 @@ function initChartsPage() {}
 function initAdminPage() {}
 function initMemberPortalPage() {}
 function initSetupPage() {}..Have I pasted in right places?
-Yes! You've pasted it perfectly! ✅ Your app.js now has the cumulative method correctly added. I can see both:
-
-The cumulative method (around line 100-140) - correctly added after the profit method
-
-The run method (around line 30-50) - correctly includes case "cumulative": return this.cumulative(P, r, n, installment);
-
-Your CalculationEngine section now looks like this:
-
-javascript
-const CalculationEngine = {
-  run(method, { P, r, n, upfront, installment, loan = 0, months = 0 }) {
-    // ... includes "cumulative" case ✅
-  },
-  simple() { ... },
-  compound() { ... },
-  flat() { ... },
-  declining() { ... },
-  tiered() { ... },
-  profit() { ... },
-  cumulative(P, r, n, installment) { ... }, // ✅ Added correctly
-  calculateLoan() { ... }
-};
