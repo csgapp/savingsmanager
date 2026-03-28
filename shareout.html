@@ -102,7 +102,7 @@
       input, select, textarea {
         width: 100%;
         box-sizing: border-box;
-        font-size: 16px; /* Prevents zoom on iOS */
+        font-size: 16px;
         -webkit-appearance: none;
         border-radius: 8px;
       }
@@ -461,108 +461,100 @@
         return;
       }
 
-      // ================ CUMULATIVE CALCULATION FUNCTION - FIXED ================
-function calculateCumulative(principal, months, isInstallment = false, monthlyAmount = 0) {
-  const monthlyRate = 0.10; // 10% interest per month on remaining balance
-  
-  if (!isInstallment) {
-    // For upfront lump sum (like K20,000 savings)
-    let balance = principal;
-    let totalInterest = 0;
-    let schedule = [];
-    
-    for (let month = 1; month <= months; month++) {
-      const interest = balance * monthlyRate;
-      totalInterest += interest;
-      balance += interest;
-      
-      schedule.push({
-        month: month,
-        interest: interest,
-        balance: balance
-      });
-    }
-    
-    return {
-      total: balance,
-      totalInterest: totalInterest,
-      principal: principal,
-      schedule: schedule
-    };
-  } else {
-    // For monthly contributions (installments)
-    let balance = 0;
-    let totalInterest = 0;
-    let totalContributions = 0;
-    let schedule = [];
-    
-    for (let month = 1; month <= months; month++) {
-      // Add monthly contribution at start of month
-      balance += monthlyAmount;
-      totalContributions += monthlyAmount;
-      
-      // Calculate interest on current balance
-      const interest = balance * monthlyRate;
-      totalInterest += interest;
-      balance += interest;
-      
-      schedule.push({
-        month: month,
-        payment: monthlyAmount,
-        interest: interest,
-        principalAdded: monthlyAmount,
-        balance: balance
-      });
-    }
-    
-    return {
-      total: balance,
-      totalInterest: totalInterest,
-      totalContributions: totalContributions,
-      schedule: schedule
-    };
-  }
-}
+      // ================ CUMULATIVE CALCULATION FUNCTION ================
+      function calculateCumulative(principal, months, isInstallment = false, monthlyAmount = 0) {
+        const monthlyRate = 0.10; // 10% interest per month on remaining balance
+        
+        if (!isInstallment) {
+          // For upfront lump sum
+          let balance = principal;
+          let totalInterest = 0;
+          let schedule = [];
+          
+          for (let month = 1; month <= months; month++) {
+            const interest = balance * monthlyRate;
+            totalInterest += interest;
+            balance += interest;
+            
+            schedule.push({
+              month: month,
+              interest: interest,
+              balance: balance
+            });
+          }
+          
+          return {
+            total: balance,
+            totalInterest: totalInterest,
+            principal: principal,
+            schedule: schedule
+          };
+        } else {
+          // For monthly contributions
+          let balance = 0;
+          let totalInterest = 0;
+          let totalContributions = 0;
+          let schedule = [];
+          
+          for (let month = 1; month <= months; month++) {
+            balance += monthlyAmount;
+            totalContributions += monthlyAmount;
+            
+            const interest = balance * monthlyRate;
+            totalInterest += interest;
+            balance += interest;
+            
+            schedule.push({
+              month: month,
+              payment: monthlyAmount,
+              interest: interest,
+              principalAdded: monthlyAmount,
+              balance: balance
+            });
+          }
+          
+          return {
+            total: balance,
+            totalInterest: totalInterest,
+            totalContributions: totalContributions,
+            schedule: schedule
+          };
+        }
+      }
 
       // ================ EXTEND CALCULATION ENGINE ================
       if (!CalculationEngine) {
         var CalculationEngine = {};
       }
 
-      // Override or extend the run method
       const originalRun = CalculationEngine.run;
       
       CalculationEngine.run = function(method, params) {
-        // Handle cumulative method
         if (method === 'cumulative') {
-          if (params.P !== null && params.P !== undefined) {
-            // Upfront calculation
+          if (params.P !== null && params.P !== undefined && params.P > 0) {
             const result = calculateCumulative(params.P, params.n, false);
             return result.total;
-          } else if (params.installment) {
-            // Installment calculation
+          } else if (params.installment && params.installment > 0) {
             const result = calculateCumulative(0, params.n, true, params.installment);
             return result.total;
           }
           return 0;
         }
         
-        // For cumulative with schedule return (used in calculate button)
         if (method === 'cumulative-with-schedule') {
-          if (params.P !== null && params.P !== undefined) {
+          if (params.P !== null && params.P !== undefined && params.P > 0) {
             return calculateCumulative(params.P, params.n, false);
-          } else if (params.installment) {
+          } else if (params.installment && params.installment > 0) {
             return calculateCumulative(0, params.n, true, params.installment);
           }
           return { total: 0, schedule: [] };
         }
         
-        // Use original for other methods
         if (originalRun) {
           return originalRun(method, params);
         }
         
-        // Fallback calculations for other methods
+        // Fallback calculations
         switch(method) {
           case 'simple':
             if (params.P !== null) return params.P * (1 + 0.10 * params.n / 12);
@@ -635,6 +627,46 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
         });
       }
 
+      // ================ FIXED: Calculate member contributions (excludes fees) ================
+      function getMemberContributions(memberId, months) {
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const memberTransactions = transactions.filter(t => t.memberId === memberId);
+        
+        // ONLY get savings transactions (excludes fees, loans, etc.)
+        const savingsTransactions = memberTransactions.filter(t => t.type === 'savings');
+        
+        // Sort by date to get chronological order
+        savingsTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Find upfront: either marked as 'initial' OR the first savings transaction
+        let upfront = 0;
+        let remainingSavings = [];
+        
+        const initialTx = savingsTransactions.find(t => 
+          t.description && t.description.toLowerCase().includes('initial')
+        );
+        
+        if (initialTx) {
+          upfront = initialTx.amount;
+          remainingSavings = savingsTransactions.filter(t => t.id !== initialTx.id);
+        } else if (savingsTransactions.length > 0) {
+          // If no transaction marked as initial, use the first one as upfront
+          upfront = savingsTransactions[0].amount;
+          remainingSavings = savingsTransactions.slice(1);
+        }
+        
+        // Total installments from remaining savings
+        const totalInstallments = remainingSavings.reduce((sum, t) => sum + t.amount, 0);
+        const monthlyInstallment = months > 0 ? totalInstallments / months : 0;
+        
+        return {
+          upfront: upfront,
+          totalInstallments: totalInstallments,
+          monthlyInstallment: monthlyInstallment,
+          savingsTransactions: savingsTransactions
+        };
+      }
+
       // Calculate single method
       document.getElementById('calculateBtn').addEventListener('click', function() {
         const method = methodSelector.value;
@@ -654,18 +686,15 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
           const member = members.find(m => m.id === memberId);
           memberName = member.name;
           
-          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
-          const memberTransactions = transactions.filter(t => t.memberId === memberId);
+          // Use the fixed contribution calculator
+          const contributions = getMemberContributions(memberId, months);
+          upfront = contributions.upfront;
+          installment = contributions.monthlyInstallment;
           
-          upfront = memberTransactions
-            .filter(t => t.type === 'savings' && t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          const totalInstallments = memberTransactions
-            .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          installment = months > 0 ? totalInstallments / months : 0;
+          console.log('Member:', memberName);
+          console.log('Upfront (savings):', upfront);
+          console.log('Monthly installment:', installment);
+          console.log('Total installments:', contributions.totalInstallments);
         } else {
           upfront = parseFloat(document.getElementById('customUpfront').value) || 0;
           installment = parseFloat(document.getElementById('customInstallment').value) || 0;
@@ -698,7 +727,6 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
             const scheduleBody = document.getElementById('scheduleBody');
             scheduleBody.innerHTML = '';
             
-            // Show combined schedule (assuming upfront then installments)
             if (upfront > 0) {
               upfrontSchedule.forEach((item, index) => {
                 const row = document.createElement('tr');
@@ -756,28 +784,6 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
           </div>
         `;
         
-        // Add example for cumulative method
-        if (method === 'cumulative' && totalContributed > 0) {
-          detailsHtml += `
-            <div class="detail-row" style="background: var(--off-white); padding: 10px; margin-top: 10px;">
-              <span><strong>Example (K3,000 loan):</strong></span>
-              <span></span>
-            </div>
-            <div class="detail-row">
-              <span>Payment 1 (K2,000):</span>
-              <span>Interest K200, Principal K1,800, Remaining K1,200</span>
-            </div>
-            <div class="detail-row">
-              <span>Payment 2 (K1,000):</span>
-              <span>Interest K120, Principal K880, Remaining K320</span>
-            </div>
-            <div class="detail-row">
-              <span>Total Interest:</span>
-              <span>K320 (10.67%)</span>
-            </div>
-          `;
-        }
-        
         detailsHtml += `
           <div class="detail-row total">
             <span>Total Return:</span>
@@ -802,20 +808,9 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
             return;
           }
           
-          const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS);
-          const member = members.find(m => m.id === memberId);
-          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
-          const memberTransactions = transactions.filter(t => t.memberId === memberId);
-          
-          upfront = memberTransactions
-            .filter(t => t.type === 'savings' && t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          const totalInstallments = memberTransactions
-            .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          installment = months > 0 ? totalInstallments / months : 0;
+          const contributions = getMemberContributions(memberId, months);
+          upfront = contributions.upfront;
+          installment = contributions.monthlyInstallment;
         } else {
           upfront = parseFloat(document.getElementById('customUpfront').value) || 0;
           installment = parseFloat(document.getElementById('customInstallment').value) || 0;
@@ -884,18 +879,9 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
           const member = members.find(m => m.id === memberId);
           memberName = member.name;
           
-          const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
-          const memberTransactions = transactions.filter(t => t.memberId === memberId);
-          
-          upfront = memberTransactions
-            .filter(t => t.type === 'savings' && t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          const totalInstallments = memberTransactions
-            .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          installment = months > 0 ? totalInstallments / months : 0;
+          const contributions = getMemberContributions(memberId, months);
+          upfront = contributions.upfront;
+          installment = contributions.monthlyInstallment;
         } else {
           upfront = parseFloat(document.getElementById('customUpfront').value) || 0;
           installment = parseFloat(document.getElementById('customInstallment').value) || 0;
@@ -934,7 +920,14 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
             const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS);
             const member = members.find(m => m.id === memberId);
             memberName = member.name;
+            
+            const contributions = getMemberContributions(memberId, months);
+            upfront = contributions.upfront;
+            installment = contributions.monthlyInstallment;
           }
+        } else {
+          upfront = parseFloat(document.getElementById('customUpfront').value) || 0;
+          installment = parseFloat(document.getElementById('customInstallment').value) || 0;
         }
         
         const data = [{
@@ -944,6 +937,7 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
           'Cycle (months)': months,
           'Upfront Contribution': upfront,
           'Installments Total': installment * months,
+          'Total Contribution': upfront + (installment * months),
           'Payout': upfront + installment
         }];
         
@@ -964,7 +958,6 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
         const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
         const months = Number(document.getElementById('months').value) || 8;
         const method = methodSelector.value;
-        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
         
         const tbody = document.getElementById('resultsBody');
         tbody.innerHTML = '';
@@ -973,17 +966,10 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
         let totalPayout = 0;
         
         members.filter(m => m.role !== 'admin').forEach(member => {
-          const memberTransactions = transactions.filter(t => t.memberId === member.id);
-          
-          const upfront = memberTransactions
-            .filter(t => t.type === 'savings' && t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          const totalInstallments = memberTransactions
-            .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
-            .reduce((sum, t) => sum + t.amount, 0);
-          
-          const installment = months > 0 ? totalInstallments / months : 0;
+          const contributions = getMemberContributions(member.id, months);
+          const upfront = contributions.upfront;
+          const installment = contributions.monthlyInstallment;
+          const totalInstallments = contributions.totalInstallments;
           
           const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
           const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
@@ -1007,11 +993,11 @@ function calculateCumulative(principal, months, isInstallment = false, monthlyAm
         const summaryRow = document.getElementById('summaryRow');
         if (summaryRow) {
           summaryRow.innerHTML = `
-             <tr>
+              <tr>
               <td colspan="6" style="text-align: right; font-weight: bold;">
                 Total Payout: ${UIManager.formatCurrency(totalPayout)} | Highest: ${UIManager.formatCurrency(highestPayout)}
-               </td>
-             </tr>
+                </td>
+              </tr>
           `;
         }
       }
