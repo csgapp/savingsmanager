@@ -733,8 +733,15 @@ CalculationEngine.run = function(method, params) {
           }
         } else {
           // Regular calculation for other methods
+          console.log('Calculating with method:', method);
+          console.log('Upfront value:', upfront);
+          console.log('Months:', months);
+          
           upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
           installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+          
+          console.log('Upfront result:', upfrontResult);
+          console.log('Installment result:', installmentResult);
         }
         
         const total = upfrontResult + installmentResult;
