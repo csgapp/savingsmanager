@@ -539,7 +539,7 @@
         </div>
         <div class="form-group">
           <label>Phone Number</label>
-          <input type="tel" id="modalMemberPhone" placeholder="+260 XXX XXX XXX">
+          <input type="tel" id="modalMemberPhone" placeholder="XXX XXX XXX">
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -556,6 +556,11 @@
           <input type="number" id="modalMembershipFee" value="50" readonly>
           <small style="color: var(--dark-gray);">Annual fee - charged once</small>
         </div>
+        <div class="form-group">
+       <label>Social Fund (K)</label>
+       <input type="number" id="modalSocialFund" value="90" readonly>
+       <small style="color: var(--dark-gray);">Social fund contribution - charged once</small>
+      </div>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
           <button type="submit" class="btn-primary" style="flex: 1;">Add Member</button>
           <button type="button" onclick="closeAddMemberModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
@@ -1010,51 +1015,69 @@
 
     // ================ FORM HANDLERS ================
     function handleAddMember() {
-      const memberData = {
-        name: document.getElementById('modalMemberName').value,
-        email: document.getElementById('modalMemberEmail').value,
-        phone: document.getElementById('modalMemberPhone').value,
-        initialSavings: parseFloat(document.getElementById('modalInitialSavings').value) || 0,
-        monthlyInstallment: parseFloat(document.getElementById('modalMonthlyInstallment').value) || 0,
-        role: 'member',
-        password: 'member123'
-      };
-      
-      try {
-        const newMember = StorageManager.addMember(memberData);
-        
-        StorageManager.createUser({
-          name: memberData.name,
-          email: memberData.email,
-          password: memberData.password,
-          role: 'member'
-        });
-        
-        if (memberData.initialSavings > 0) {
-          StorageManager.addTransaction({
-            memberId: newMember.id,
-            type: 'savings',
-            amount: memberData.initialSavings,
-            description: 'Initial savings deposit'
-          });
-        }
-        
-        const feeAmount = parseFloat(document.getElementById('modalMembershipFee').value) || 50;
-        StorageManager.addTransaction({
-          memberId: newMember.id,
-          type: 'fee',
-          amount: -feeAmount,
-          description: 'Annual membership fee'
-        });
-        
-        UIManager.showToast('✅ Member added successfully!', 'success');
-        closeAddMemberModal();
-        loadDashboardStats();
-        loadMembersList();
-      } catch (error) {
-        UIManager.showToast(error.message, 'error');
-      }
+  const memberData = {
+    name: document.getElementById('modalMemberName').value,
+    email: document.getElementById('modalMemberEmail').value,
+    phone: document.getElementById('modalMemberPhone').value,
+    initialSavings: parseFloat(document.getElementById('modalInitialSavings').value) || 0,
+    monthlyInstallment: parseFloat(document.getElementById('modalMonthlyInstallment').value) || 0,
+    role: 'member',
+    password: 'member123'
+  };
+  
+  try {
+    const newMember = StorageManager.addMember(memberData);
+    
+    // Create user login
+    StorageManager.createUser({
+      name: memberData.name,
+      email: memberData.email,
+      password: memberData.password,
+      role: 'member'
+    });
+    
+    // Add initial savings if any
+    if (memberData.initialSavings > 0) {
+      StorageManager.addTransaction({
+        memberId: newMember.id,
+        type: 'savings',
+        amount: memberData.initialSavings,
+        description: 'Initial savings deposit',
+        isFee: false
+      });
     }
+    
+    // Add Membership Fee
+    const membershipFee = parseFloat(document.getElementById('modalMembershipFee').value) || 50;
+    StorageManager.addTransaction({
+      memberId: newMember.id,
+      type: 'fee',
+      amount: -membershipFee,
+      description: 'Annual membership fee',
+      isFee: true,
+      feeType: 'membership'
+    });
+    
+    // ADD SOCIAL FUND FEE HERE
+    const socialFund = parseFloat(document.getElementById('modalSocialFund').value) || 90;
+    StorageManager.addTransaction({
+      memberId: newMember.id,
+      type: 'fee',
+      amount: -socialFund,
+      description: 'Social Fund Contribution',
+      isFee: true,
+      feeType: 'social_fund'
+    });
+    
+    UIManager.showToast('✅ Member added successfully!', 'success');
+    closeAddMemberModal();
+    loadMembersList();
+    loadDashboardStats();
+    
+  } catch (error) {
+    UIManager.showToast(error.message, 'error');
+  }
+}
 
     function handleIssueLoan() {
       const loanData = {
