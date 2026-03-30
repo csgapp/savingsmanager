@@ -775,7 +775,6 @@
         
         const balance = memberTransactions.reduce((sum, t) => {
           if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
-          if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
           return sum;
         }, 0);
         
