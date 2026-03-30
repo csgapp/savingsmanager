@@ -322,30 +322,7 @@ const StorageManager = {
     members.push(newMember);
     this.setItem(this.KEYS.MEMBERS, members);
     
-    // Record membership fee as a separate transaction (does NOT affect savings balance for share-out)
-    if (CONFIG.MEMBERSHIP_FEE > 0) {
-      this.addTransaction({
-        memberId: newMember.id,
-        type: 'fee',
-        amount: -CONFIG.MEMBERSHIP_FEE,
-        description: 'Membership Fee (Annual)',
-        isFee: true,
-        feeType: 'membership'
-      });
-    }
-    
-    // Record social fund fee as a separate transaction (does NOT affect savings balance for share-out)
-    if (CONFIG.SOCIAL_FUND_FEE > 0) {
-      this.addTransaction({
-        memberId: newMember.id,
-        type: 'fee',
-        amount: -CONFIG.SOCIAL_FUND_FEE,
-        description: 'Social Fund Contribution',
-        isFee: true,
-        feeType: 'social_fund'
-      });
-    }
-    
+       
     return newMember;
   },
 
