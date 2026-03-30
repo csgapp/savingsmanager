@@ -326,7 +326,6 @@ const StorageManager = {
     members.push(newMember);
     this.setItem(this.KEYS.MEMBERS, members);
     
-       
     return newMember;
   },
 
@@ -741,8 +740,8 @@ style.textContent = `
   }
   
   @keyframes skeleton-loading {
-    0% { background-position: 200% 0;
-    100% { background-position: -200% 0;
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 `;
 document.head.appendChild(style);
