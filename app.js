@@ -48,80 +48,88 @@ const CalculationEngine = {
     return 0;
   },
 
-  compound(P, r, n, installment) {
-    // Compound growth - same as cumulative (exponential)
-    if (P && P > 0) return P * Math.pow(1 + r, n);
-    if (installment && installment > 0) {
-      let total = 0;
-      for (let i = 1; i <= n; i++) {
-        total += installment * Math.pow(1 + r, n - i + 1);
-      }
-      return total;
+ compound(P, r, n, installment) {
+  // Compound growth - monthly compounding
+  const monthlyRate = 0.10; // 10% per month
+  if (P && P > 0) {
+    return P * Math.pow(1 + monthlyRate, n);
+  }
+  if (installment && installment > 0) {
+    let total = 0;
+    for (let i = 1; i <= n; i++) {
+      total += installment * Math.pow(1 + monthlyRate, n - i + 1);
     }
-    return 0;
-  },
+    return total;
+  }
+  return 0;
+},
 
-  flat(P, installment, n) {
-    // Flat 20% return
-    if (P && P > 0) return P * 1.20;
-    if (installment && installment > 0) return (installment * n) * 1.20;
-    return 0;
-  },
+profit(P, installment, n) {
+  // Profit sharing - fixed 30% return on total
+  if (P && P > 0) {
+    return P * 1.30;
+  }
+  if (installment && installment > 0) {
+    return (installment * n) * 1.30;
+  }
+  return 0;
+},
 
-  declining(P, r, n, installment) {
-    // Declining balance - decreases each month
-    if (P && P > 0) {
-      let balance = P;
-      for (let i = 1; i <= n; i++) {
-        balance = balance * (1 - r);
-      }
-      return balance;
+declining(P, r, n, installment) {
+  // Declining balance - decreases by 10% each month
+  const monthlyRate = 0.10;
+  if (P && P > 0) {
+    let balance = P;
+    for (let i = 1; i <= n; i++) {
+      balance = balance * (1 - monthlyRate);
     }
-    if (installment && installment > 0) {
-      let total = 0;
-      let balance = 0;
-      for (let i = 1; i <= n; i++) {
-        balance += installment;
-        balance = balance * (1 - r);
-        total += balance;
-      }
-      return total;
+    return balance;
+  }
+  if (installment && installment > 0) {
+    let total = 0;
+    let balance = 0;
+    for (let i = 1; i <= n; i++) {
+      balance += installment;
+      balance = balance * (1 - monthlyRate);
+      total += balance;
     }
-    return 0;
-  },
+    return total;
+  }
+  return 0;
+},
 
-  tiered(P, r, n, installment) {
-    // Tiered growth: lower rate first half, higher rate second half
-    const lowerRate = r * 0.8;  // 8%
-    const higherRate = r * 1.5; // 15%
-    const half = Math.floor(n / 2);
-    
-    if (P && P > 0) {
-      let balance = P;
-      // First half - lower rate
-      for (let i = 1; i <= half; i++) {
-        balance = balance * (1 + lowerRate);
-      }
-      // Second half - higher rate
-      for (let i = half + 1; i <= n; i++) {
-        balance = balance * (1 + higherRate);
-      }
-      return balance;
+tiered(P, r, n, installment) {
+  // Tiered growth: first half 8%, second half 15%
+  const lowerRate = 0.08;
+  const higherRate = 0.15;
+  const half = Math.floor(n / 2);
+  
+  if (P && P > 0) {
+    let balance = P;
+    // First half - lower rate (8%)
+    for (let i = 1; i <= half; i++) {
+      balance = balance * (1 + lowerRate);
     }
-    
-    if (installment && installment > 0) {
-      let total = 0;
-      let balance = 0;
-      for (let i = 1; i <= n; i++) {
-        balance += installment;
-        const currentRate = i <= half ? lowerRate : higherRate;
-        balance = balance * (1 + currentRate);
-        total += balance;
-      }
-      return total;
+    // Second half - higher rate (15%)
+    for (let i = half + 1; i <= n; i++) {
+      balance = balance * (1 + higherRate);
     }
-    return 0;
-  },
+    return balance;
+  }
+  
+  if (installment && installment > 0) {
+    let total = 0;
+    let balance = 0;
+    for (let i = 1; i <= n; i++) {
+      balance += installment;
+      const currentRate = i <= half ? lowerRate : higherRate;
+      balance = balance * (1 + currentRate);
+      total += balance;
+    }
+    return total;
+  }
+  return 0;
+},
 
   profit(P, installment, n) {
     // Profit sharing - fixed 30% return
