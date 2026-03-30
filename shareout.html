@@ -768,6 +768,9 @@ CalculationEngine.run = function(method, params) {
         `;
         
         document.getElementById('resultDetails').innerHTML = detailsHtml;
+        
+        // Refresh the table to show correct values for all members
+        loadAllMembersResults();
       });
 
       // Compare all methods
@@ -833,6 +836,9 @@ CalculationEngine.run = function(method, params) {
         });
         
         document.getElementById('comparisonSection').classList.remove('hidden');
+        
+        // Refresh the table
+        loadAllMembersResults();
       });
 
       // Save to history
@@ -880,6 +886,9 @@ CalculationEngine.run = function(method, params) {
         
         StorageManager.setItem(StorageManager.KEYS.SHAREOUT_HISTORY, history);
         alert('✅ Calculation saved to history!');
+        
+        // Refresh the table
+        loadAllMembersResults();
       });
 
       // Export results
