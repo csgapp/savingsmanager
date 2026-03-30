@@ -523,70 +523,46 @@
       }
 
       // ================ EXTEND CALCULATION ENGINE ================
-      if (!CalculationEngine) {
-        var CalculationEngine = {};
-      }
+if (!CalculationEngine) {
+  var CalculationEngine = {};
+}
 
-      const originalRun = CalculationEngine.run;
-      
-      CalculationEngine.run = function(method, params) {
-        if (method === 'cumulative') {
-          if (params.P !== null && params.P !== undefined && params.P > 0) {
-            const result = calculateCumulative(params.P, params.n, false);
-            return result.total;
-          } else if (params.installment && params.installment > 0) {
-            const result = calculateCumulative(0, params.n, true, params.installment);
-            return result.total;
-          }
-          return 0;
-        }
-        
-        if (method === 'cumulative-with-schedule') {
-          if (params.P !== null && params.P !== undefined && params.P > 0) {
-            return calculateCumulative(params.P, params.n, false);
-          } else if (params.installment && params.installment > 0) {
-            return calculateCumulative(0, params.n, true, params.installment);
-          }
-          return { total: 0, schedule: [] };
-        }
-        
-        if (originalRun) {
-          return originalRun(method, params);
-        }
-        
-        // Fallback calculations
-        switch(method) {
-          case 'simple':
-            if (params.P !== null) return params.P * (1 + 0.10 * params.n / 12);
-            if (params.installment) {
-              let total = 0;
-              for (let i = 0; i < params.n; i++) {
-                total += params.installment * (1 + 0.10 * (params.n - i) / 12);
-              }
-              return total;
-            }
-            return 0;
-            
-          case 'compound':
-            if (params.P !== null) return params.P * Math.pow(1 + 0.10/12, params.n);
-            if (params.installment) {
-              let total = 0;
-              for (let i = 0; i < params.n; i++) {
-                total += params.installment * Math.pow(1 + 0.10/12, params.n - i);
-              }
-              return total;
-            }
-            return 0;
-            
-          case 'flat':
-            if (params.P !== null) return params.P * 1.20;
-            if (params.installment) return params.installment * params.n * 1.20;
-            return 0;
-            
-          default:
-            return params.P || 0;
-        }
-      };
+// Store the original run method
+const originalRun = CalculationEngine.run;
+
+// Only override to add cumulative support, NOT to replace other methods
+CalculationEngine.run = function(method, params) {
+  // Handle cumulative method with schedule (for display)
+  if (method === 'cumulative-with-schedule') {
+    if (params.P !== null && params.P !== undefined && params.P > 0) {
+      return calculateCumulative(params.P, params.n, false);
+    } else if (params.installment && params.installment > 0) {
+      return calculateCumulative(0, params.n, true, params.installment);
+    }
+    return { total: 0, schedule: [] };
+  }
+  
+  // For cumulative without schedule, use the original or calculate directly
+  if (method === 'cumulative') {
+    if (params.P !== null && params.P !== undefined && params.P > 0) {
+      const result = calculateCumulative(params.P, params.n, false);
+      return result.total;
+    } else if (params.installment && params.installment > 0) {
+      const result = calculateCumulative(0, params.n, true, params.installment);
+      return result.total;
+    }
+    return 0;
+  }
+  
+  // For ALL OTHER methods, use the original CalculationEngine (from app.js)
+  if (originalRun) {
+    return originalRun(method, params);
+  }
+  
+  // Fallback - should never reach here if app.js is loaded
+  console.warn('No original CalculationEngine found for method:', method);
+  return 0;
+};
 
       // Method descriptions
       const methodDescriptions = {
