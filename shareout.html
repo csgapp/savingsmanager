@@ -530,38 +530,133 @@ if (!CalculationEngine) {
 // Store the original run method
 const originalRun = CalculationEngine.run;
 
-// Only override to add cumulative support, NOT to replace other methods
+// Override with full implementation to ensure all methods work
 CalculationEngine.run = function(method, params) {
+  const { P, r, n, upfront, installment, loan = 0, months = 0 } = params;
+  const monthlyRate = 0.10; // Default 10% per month
+
   // Handle cumulative method with schedule (for display)
   if (method === 'cumulative-with-schedule') {
-    if (params.P !== null && params.P !== undefined && params.P > 0) {
-      return calculateCumulative(params.P, params.n, false);
-    } else if (params.installment && params.installment > 0) {
-      return calculateCumulative(0, params.n, true, params.installment);
+    if (P !== null && P !== undefined && P > 0) {
+      return calculateCumulative(P, n, false);
+    } else if (installment && installment > 0) {
+      return calculateCumulative(0, n, true, installment);
     }
     return { total: 0, schedule: [] };
   }
   
-  // For cumulative without schedule, use the original or calculate directly
-  if (method === 'cumulative') {
-    if (params.P !== null && params.P !== undefined && params.P > 0) {
-      const result = calculateCumulative(params.P, params.n, false);
-      return result.total;
-    } else if (params.installment && params.installment > 0) {
-      const result = calculateCumulative(0, params.n, true, params.installment);
-      return result.total;
-    }
-    return 0;
+  switch (method) {
+    case "simple":
+      if (P && P > 0) return P * (1 + monthlyRate * n);
+      if (installment && installment > 0) {
+        let total = 0;
+        for (let i = 1; i <= n; i++) {
+          total += installment * (1 + monthlyRate * (n - i + 1));
+        }
+        return total;
+      }
+      return 0;
+
+    case "compound":
+      if (P && P > 0) return P * Math.pow(1 + monthlyRate, n);
+      if (installment && installment > 0) {
+        let total = 0;
+        for (let i = 1; i <= n; i++) {
+          total += installment * Math.pow(1 + monthlyRate, n - i + 1);
+        }
+        return total;
+      }
+      return 0;
+
+    case "flat":
+      if (P && P > 0) return P * 1.20;
+      if (installment && installment > 0) return (installment * n) * 1.20;
+      return 0;
+
+    case "declining":
+      if (P && P > 0) {
+        let balance = P;
+        for (let i = 1; i <= n; i++) {
+          balance = balance * (1 - monthlyRate);
+        }
+        return balance;
+      }
+      if (installment && installment > 0) {
+        let balance = 0;
+        for (let i = 1; i <= n; i++) {
+          balance += installment;
+          balance = balance * (1 - monthlyRate);
+        }
+        return balance;
+      }
+      return 0;
+
+    case "tiered":
+      const lowerRate = 0.08;
+      const higherRate = 0.15;
+      const half = Math.floor(n / 2);
+      if (P && P > 0) {
+        let balance = P;
+        for (let i = 1; i <= half; i++) {
+          balance = balance * (1 + lowerRate);
+        }
+        for (let i = half + 1; i <= n; i++) {
+          balance = balance * (1 + higherRate);
+        }
+        return balance;
+      }
+      if (installment && installment > 0) {
+        let balance = 0;
+        for (let i = 1; i <= n; i++) {
+          balance += installment;
+          const currentRate = i <= half ? lowerRate : higherRate;
+          balance = balance * (1 + currentRate);
+        }
+        return balance;
+      }
+      return 0;
+
+    case "profit":
+      if (P && P > 0) return P * 1.30;
+      if (installment && installment > 0) return (installment * n) * 1.30;
+      return 0;
+
+    case "cumulative":
+      if (P && P > 0) {
+        let balance = P;
+        for (let month = 1; month <= n; month++) {
+          balance += balance * monthlyRate;
+        }
+        return balance;
+      }
+      if (installment && installment > 0) {
+        let balance = 0;
+        for (let month = 1; month <= n; month++) {
+          balance += installment;
+          balance += balance * monthlyRate;
+        }
+        return balance;
+      }
+      return 0;
+
+    case "loan":
+      if (!loan || loan <= 0) return { monthlyPayment: 0, totalPayment: 0, totalInterest: 0 };
+      const loanMonthlyRate = r / 12;
+      if (loanMonthlyRate === 0) {
+        const payment = loan / months;
+        return { monthlyPayment: payment, totalPayment: loan, totalInterest: 0 };
+      }
+      const payment = loan * loanMonthlyRate * Math.pow(1 + loanMonthlyRate, months) / 
+                     (Math.pow(1 + loanMonthlyRate, months) - 1);
+      return {
+        monthlyPayment: payment,
+        totalPayment: payment * months,
+        totalInterest: (payment * months) - loan
+      };
+
+    default:
+      return 0;
   }
-  
-  // For ALL OTHER methods, use the original CalculationEngine (from app.js)
-  if (originalRun) {
-    return originalRun(method, params);
-  }
-  
-  // Fallback - should never reach here if app.js is loaded
-  console.warn('No original CalculationEngine found for method:', method);
-  return 0;
 };
 
       // Method descriptions
