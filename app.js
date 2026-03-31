@@ -11,6 +11,7 @@ const CONFIG = {
   INTEREST_RATE: 0.10,
   LOAN_INTEREST_RATE: 0.15,
   MEMBERSHIP_FEE: 50,
+  SOCIAL_FUND_FEE: 90,
   OTHER_FEES: 25,
   SESSION_TIMEOUT_MINUTES: 30,
   MAX_LOAN_AMOUNT: 100000,
@@ -33,47 +34,123 @@ const CalculationEngine = {
       case "tiered": return this.tiered(P, r, n, installment);
       case "profit": return this.profit(P, installment, n);
       case "loan": return this.calculateLoan(loan, r, months);
+      case "cumulative": return this.cumulative(P, r, n, installment);
       default: return 0;
     }
   },
 
   simple(P, r, n, installment) {
-    if (P) return P * (1 + r * n);
-    if (installment) return installment * n * (1 + r);
+    // Simple interest: 10% per month on original principal
+    const monthlyRate = 0.10;
+    if (P && P > 0) return P * (1 + monthlyRate * n);
+    if (installment && installment > 0) {
+      let total = 0;
+      for (let i = 1; i <= n; i++) {
+        total += installment * (1 + monthlyRate * (n - i + 1));
+      }
+      return total;
+    }
     return 0;
   },
 
   compound(P, r, n, installment) {
-    if (P) return P * Math.pow(1 + r, n);
-    if (installment) return installment * ((Math.pow(1 + r, n) - 1) / r);
+    // Compound growth: 10% per month compounding
+    const monthlyRate = 0.10;
+    if (P && P > 0) return P * Math.pow(1 + monthlyRate, n);
+    if (installment && installment > 0) {
+      let total = 0;
+      for (let i = 1; i <= n; i++) {
+        total += installment * Math.pow(1 + monthlyRate, n - i + 1);
+      }
+      return total;
+    }
     return 0;
   },
 
   flat(P, installment, n) {
-    if (P) return P + (P * 0.20);
-    if (installment) return (installment * n) + (installment * 0.20);
+    // Flat 20% return on total contribution
+    if (P && P > 0) return P * 1.20;
+    if (installment && installment > 0) return (installment * n) * 1.20;
     return 0;
   },
 
   declining(P, r, n, installment) {
-    if (P) return P * Math.pow((1 - r), n);
-    if (installment) return installment * n * (1 - r);
+    // Declining balance: loses 10% of remaining each month
+    const monthlyRate = 0.10;
+    if (P && P > 0) {
+      let balance = P;
+      for (let i = 1; i <= n; i++) {
+        balance = balance * (1 - monthlyRate);
+      }
+      return balance;
+    }
+    if (installment && installment > 0) {
+      let balance = 0;
+      for (let i = 1; i <= n; i++) {
+        balance += installment;
+        balance = balance * (1 - monthlyRate);
+      }
+      return balance;
+    }
     return 0;
   },
 
   tiered(P, r, n, installment) {
-    if (P) {
-      const half = Math.floor(n / 2);
-      const firstHalf = P * Math.pow(1 + r, half);
-      return firstHalf * Math.pow(1 + r * 1.5, n - half);
+    // Tiered growth: first half 8% per month, second half 15% per month
+    const lowerRate = 0.08;  // 8% per month
+    const higherRate = 0.15; // 15% per month
+    const half = Math.floor(n / 2);
+    
+    if (P && P > 0) {
+      let balance = P;
+      // First half - lower rate (8% per month)
+      for (let i = 1; i <= half; i++) {
+        balance = balance * (1 + lowerRate);
+      }
+      // Second half - higher rate (15% per month)
+      for (let i = half + 1; i <= n; i++) {
+        balance = balance * (1 + higherRate);
+      }
+      return balance;
     }
-    if (installment) return installment * n * (1 + r * 0.75);
+    
+    if (installment && installment > 0) {
+      let balance = 0;
+      for (let i = 1; i <= n; i++) {
+        balance += installment;
+        const currentRate = i <= half ? lowerRate : higherRate;
+        balance = balance * (1 + currentRate);
+      }
+      return balance;
+    }
     return 0;
   },
 
   profit(P, installment, n) {
-    if (P) return P + (P * 0.30);
-    if (installment) return (installment * n) + (installment * n * 0.30);
+    // Profit sharing: fixed 30% return on total contribution
+    if (P && P > 0) return P * 1.30;
+    if (installment && installment > 0) return (installment * n) * 1.30;
+    return 0;
+  },
+
+  cumulative(P, r, n, installment) {
+    // Cumulative: 10% interest on remaining balance each month (same as compound)
+    const monthlyRate = 0.10;
+    if (P && P > 0) {
+      let balance = P;
+      for (let month = 1; month <= n; month++) {
+        balance += balance * monthlyRate;
+      }
+      return balance;
+    }
+    if (installment && installment > 0) {
+      let balance = 0;
+      for (let month = 1; month <= n; month++) {
+        balance += installment;
+        balance += balance * monthlyRate;
+      }
+      return balance;
+    }
     return 0;
   },
 
@@ -109,34 +186,32 @@ const StorageManager = {
 
   init() {
     // PRODUCTION MODE - COMPLETELY EMPTY SLATE
-    // Initialize empty arrays ONLY if they don't exist
     if (!localStorage.getItem(this.KEYS.USERS)) {
-      this.setItem(this.KEYS.USERS, []); // Empty array - NO DEFAULT ADMIN
+      this.setItem(this.KEYS.USERS, []);
     }
     if (!localStorage.getItem(this.KEYS.MEMBERS)) {
-      this.setItem(this.KEYS.MEMBERS, []); // Empty array - NO SAMPLE MEMBERS
+      this.setItem(this.KEYS.MEMBERS, []);
     }
     if (!localStorage.getItem(this.KEYS.TRANSACTIONS)) {
-      this.setItem(this.KEYS.TRANSACTIONS, []); // Empty array - NO TRANSACTIONS
+      this.setItem(this.KEYS.TRANSACTIONS, []);
     }
     if (!localStorage.getItem(this.KEYS.LOANS)) {
-      this.setItem(this.KEYS.LOANS, []); // Empty array - NO LOANS
+      this.setItem(this.KEYS.LOANS, []);
     }
     if (!localStorage.getItem(this.KEYS.SHAREOUT_HISTORY)) {
-      this.setItem(this.KEYS.SHAREOUT_HISTORY, []); // Empty array - NO HISTORY
+      this.setItem(this.KEYS.SHAREOUT_HISTORY, []);
     }
     if (!localStorage.getItem(this.KEYS.SETTINGS)) {
-      this.setItem(this.KEYS.SETTINGS, {}); // Empty object
+      this.setItem(this.KEYS.SETTINGS, {});
     }
     if (!localStorage.getItem(this.KEYS.AUDIT_LOG)) {
-      this.setItem(this.KEYS.AUDIT_LOG, []); // Empty array
+      this.setItem(this.KEYS.AUDIT_LOG, []);
     }
-    
+
     console.log('🏦 Storage initialized - production mode, no demo data');
   },
 
   hashPassword(password) {
-    // Simple encoding - in production use proper bcrypt
     return btoa(password);
   },
 
@@ -168,16 +243,13 @@ const StorageManager = {
       details,
       user: AuthManager.getCurrentUser()?.email || 'system'
     });
-    // Keep only last 1000 audit entries
     if (auditLog.length > 1000) auditLog.shift();
     localStorage.setItem(this.KEYS.AUDIT_LOG, JSON.stringify(auditLog));
   },
 
-  // User methods
   createUser(userData) {
     const users = this.getItem(this.KEYS.USERS);
     
-    // Check for duplicate email
     if (users.some(u => u.email === userData.email)) {
       throw new Error('A user with this email already exists');
     }
@@ -223,16 +295,13 @@ const StorageManager = {
     return false;
   },
 
-  // Member methods
   addMember(memberData) {
     const members = this.getItem(this.KEYS.MEMBERS);
     
-    // Validate required fields
     if (!memberData.name || !memberData.email) {
       throw new Error('Name and email are required');
     }
     
-    // Check for duplicate email
     if (members.some(m => m.email === memberData.email)) {
       throw new Error('A member with this email already exists');
     }
@@ -252,6 +321,7 @@ const StorageManager = {
     
     members.push(newMember);
     this.setItem(this.KEYS.MEMBERS, members);
+    
     return newMember;
   },
 
@@ -278,7 +348,6 @@ const StorageManager = {
     return filtered;
   },
 
-  // Transaction methods
   addTransaction(transaction) {
     const transactions = this.getItem(this.KEYS.TRANSACTIONS);
     
@@ -291,7 +360,11 @@ const StorageManager = {
     
     transactions.push(newTransaction);
     this.setItem(this.KEYS.TRANSACTIONS, transactions);
-    this.updateMemberBalance(transaction.memberId);
+    
+    // Only update member balance for non-fee transactions
+    if (!transaction.isFee) {
+      this.updateMemberBalance(transaction.memberId);
+    }
     
     return newTransaction;
   },
@@ -302,11 +375,11 @@ const StorageManager = {
     const member = members.find(m => m.id === memberId);
     
     if (member) {
-      const memberTxns = transactions.filter(t => t.memberId === memberId);
+      const memberTxns = transactions.filter(t => t.memberId === memberId && !t.isFee);
       
       const balance = memberTxns.reduce((sum, txn) => {
         if (txn.type === 'savings' || txn.type === 'loan_payment') return sum + txn.amount;
-        if (txn.type === 'fee' || txn.type === 'loan_disbursement') return sum - Math.abs(txn.amount);
+        if (txn.type === 'loan_disbursement') return sum - Math.abs(txn.amount);
         return sum;
       }, 0);
       
@@ -321,11 +394,9 @@ const StorageManager = {
     }
   },
 
-  // Loan methods
   addLoan(loanData) {
     const loans = this.getItem(this.KEYS.LOANS);
     
-    // Validate
     if (!loanData.memberId || !loanData.amount || loanData.amount < CONFIG.MIN_LOAN_AMOUNT) {
       throw new Error('Invalid loan data');
     }
@@ -352,7 +423,6 @@ const StorageManager = {
     loans.push(newLoan);
     this.setItem(this.KEYS.LOANS, loans);
     
-    // Update member active loans count
     const members = this.getItem(this.KEYS.MEMBERS);
     const member = members.find(m => m.id === loanData.memberId);
     if (member) {
@@ -360,13 +430,13 @@ const StorageManager = {
       this.setItem(this.KEYS.MEMBERS, members);
     }
     
-    // Record disbursement transaction
     this.addTransaction({
       memberId: loanData.memberId,
       type: 'loan_disbursement',
       amount: -loanData.amount,
       description: `Loan disbursement - ${loanData.purpose || 'General'}`,
-      reference: newLoan.id
+      reference: newLoan.id,
+      isFee: false
     });
     
     return newLoan;
@@ -386,7 +456,6 @@ const StorageManager = {
       loan.remainingBalance = 0;
       loan.repaidDate = new Date().toISOString().split('T')[0];
       
-      // Update member active loans count
       const members = this.getItem(this.KEYS.MEMBERS);
       const member = members.find(m => m.id === loan.memberId);
       if (member) {
@@ -397,13 +466,13 @@ const StorageManager = {
     
     this.setItem(this.KEYS.LOANS, loans);
     
-    // Record payment transaction
     this.addTransaction({
       memberId: loan.memberId,
       type: 'loan_payment',
       amount: amount,
       description: `Loan payment for ${loan.purpose || 'loan'}`,
-      reference: loanId
+      reference: loanId,
+      isFee: false
     });
     
     return loan;
@@ -432,12 +501,12 @@ const AuthManager = {
 
   isAdmin() {
     const user = this.getCurrentUser();
-    return user?.role === 'admin';
+    return user && user.role === 'admin';
   },
 
   isMember() {
     const user = this.getCurrentUser();
-    return user?.role === 'member';
+    return user && user.role === 'member';
   },
 
   requestPasswordReset(email) {
@@ -445,10 +514,9 @@ const AuthManager = {
     const user = users.find(u => u.email === email);
     
     if (user) {
-      // In production, send actual email
       const resetToken = Math.random().toString(36).substring(2, 15);
       user.resetToken = resetToken;
-      user.resetTokenExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+      user.resetTokenExpiry = new Date(Date.now() + 3600000).toISOString();
       StorageManager.setItem(StorageManager.KEYS.USERS, users);
       return resetToken;
     }
@@ -476,7 +544,7 @@ const UIManager = {
     if (el) {
       el.textContent = message;
       el.className = `message ${type}-message`;
-      
+
       if (duration) {
         setTimeout(() => {
           el.textContent = '';
@@ -532,7 +600,6 @@ const UIManager = {
     }
   },
 
-  // Loading states
   setLoading(buttonId, isLoading) {
     const btn = document.getElementById(buttonId);
     if (btn) {
@@ -546,7 +613,6 @@ const UIManager = {
     }
   },
 
-  // Input validation
   validateAmount(input, min = 0, max = CONFIG.MAX_SAVINGS_AMOUNT) {
     if (!input) return 0;
     
@@ -577,7 +643,6 @@ const UIManager = {
   },
 
   showToast(message, type = 'info', duration = 3000) {
-    // Create toast container if it doesn't exist
     let container = document.getElementById('toast-container');
     if (!container) {
       container = document.createElement('div');
@@ -590,7 +655,7 @@ const UIManager = {
       `;
       document.body.appendChild(container);
     }
-    
+
     const toast = document.createElement('div');
     toast.style.cssText = `
       background: white;
@@ -605,16 +670,16 @@ const UIManager = {
       animation: slideIn 0.3s ease;
       border-left: 4px solid ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
     `;
-    
+
     let icon = '';
     if (type === 'success') icon = '✅';
     else if (type === 'error') icon = '❌';
     else if (type === 'warning') icon = '⚠️';
     else icon = 'ℹ️';
-    
+
     toast.innerHTML = `${icon} ${message}`;
     container.appendChild(toast);
-    
+
     setTimeout(() => {
       toast.style.animation = 'slideOut 0.3s ease';
       setTimeout(() => toast.remove(), 300);
@@ -633,18 +698,18 @@ style.textContent = `
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
   }
-  
+
   @keyframes slideOut {
     from { transform: translateX(0); opacity: 1; }
     to { transform: translateX(100%); opacity: 0; }
   }
-  
+
   .btn-loading {
     position: relative;
     color: transparent !important;
     pointer-events: none;
   }
-  
+
   .btn-loading::after {
     content: '';
     position: absolute;
@@ -659,17 +724,17 @@ style.textContent = `
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
-  
+
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
-  
+
   .skeleton {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s infinite;
   }
-  
+
   @keyframes skeleton-loading {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
@@ -680,7 +745,7 @@ document.head.appendChild(style);
 // ================ SESSION MANAGER ================
 const SessionManager = {
   timeoutId: null,
-  
+
   init() {
     this.resetTimer();
     this.setupListeners();
@@ -815,7 +880,7 @@ const ExportManager = {
 
     const now = new Date();
     const user = AuthManager.getCurrentUser();
-    
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -829,7 +894,7 @@ const ExportManager = {
           <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
             <div>
               <p><strong>Generated:</strong> ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</p>
-              <p><strong>User:</strong> ${user?.name || 'System'}</p>
+              <p><strong>User:</strong> ${user && user.name ? user.name : 'System'}</p>
               <p><strong>App:</strong> ${CONFIG.APP_NAME} v${CONFIG.VERSION}</p>
             </div>
           </div>
@@ -920,25 +985,24 @@ const ExportManager = {
     }
   },
 
-  // Report formatters
   formatMemberReport(members, transactions, loans) {
     return members.filter(m => m.role !== 'admin').map(member => {
-      const memberTransactions = transactions.filter(t => t.memberId === member.id);
+      const memberTransactions = transactions.filter(t => t.memberId === member.id && !t.isFee);
       const memberLoans = loans.filter(l => l.memberId === member.id);
-      
+
       const balance = memberTransactions.reduce((sum, t) => {
         if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
-        if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+        if (t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
         return sum;
       }, 0);
-      
+
       const totalSavings = memberTransactions
         .filter(t => t.type === 'savings')
         .reduce((sum, t) => sum + t.amount, 0);
-      
+
       const activeLoans = memberLoans.filter(l => l.status === 'active').length;
       const totalLoans = memberLoans.reduce((sum, l) => sum + l.amount, 0);
-      
+
       return {
         'Member ID': member.id.slice(-8),
         'Full Name': member.name,
@@ -976,8 +1040,8 @@ const ExportManager = {
       const member = members.find(m => m.id === loan.memberId);
       return {
         'Loan ID': loan.id.slice(-8),
-        'Member Name': member?.name || 'Unknown',
-        'Member Email': member?.email || 'Unknown',
+        'Member Name': member ? member.name : 'Unknown',
+        'Member Email': member ? member.email : 'Unknown',
         'Loan Amount (K)': loan.amount.toFixed(2),
         'Interest Rate (%)': (loan.rate * 100).toFixed(1),
         'Term (months)': loan.term,
@@ -998,7 +1062,7 @@ const ExportManager = {
       return {
         'Date': t.date,
         'Time': t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : '-',
-        'Member': member?.name || 'System',
+        'Member': member ? member.name : 'System',
         'Transaction Type': t.type.toUpperCase(),
         'Amount (K)': Math.abs(t.amount).toFixed(2),
         'Direction': t.amount > 0 ? 'CREDIT' : 'DEBIT',
@@ -1012,10 +1076,8 @@ const ExportManager = {
 
 // ================ PAGE INITIALIZATION ================
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize storage - PRODUCTION MODE, NO DEMO DATA
   StorageManager.init();
   
-  // Check authentication for protected pages
   const path = window.location.pathname;
   const page = path.split('/').pop() || 'index.html';
   
@@ -1027,12 +1089,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
   
-  // Initialize session for authenticated users
   if (AuthManager.isAuthenticated()) {
     SessionManager.init();
   }
   
-  // Page-specific initialization (stubs - actual implementations in page files)
   console.log(`📄 Loading page: ${page}`);
 });
 
