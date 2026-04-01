@@ -307,6 +307,26 @@
       </div>
     </div>
 
+    <!-- ================ MEMBER PROGRESS TRACKER ================ -->
+    <div class="panel" style="margin-bottom: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">🎯 Member Recruitment Progress</h2>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label style="margin: 0; font-size: 0.9rem;">Target:</label>
+          <input type="number" id="memberTarget" value="20" min="1" style="width: 80px; padding: 5px 10px; border-radius: var(--radius-sm); border: 2px solid var(--light-gray);">
+          <button onclick="updateMemberTarget()" class="btn-small" style="background: var(--secondary);">Set</button>
+        </div>
+      </div>
+      <div class="progress-container" style="background: var(--light-gray); border-radius: 10px; height: 30px; overflow: hidden; position: relative; margin-bottom: 10px;">
+        <div id="memberProgressBar" class="progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--primary-dark)); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: 0%;"></div>
+        <div id="progressText" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; color: var(--white); text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">0 / 20 Members (0%)</div>
+      </div>
+      <div style="display: flex; justify-content: space-between; color: var(--dark-gray); font-size: 0.9rem;">
+        <span id="membersAdded">0 members added</span>
+        <span id="membersRemaining">20 spots remaining</span>
+      </div>
+    </div>
+
     <!-- ================ MEMBER MANAGEMENT SECTION ================ -->
     <div class="panel">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -671,6 +691,7 @@
       // Load admin data
       loadAdminInfo();
       loadDashboardStats();
+      loadMemberProgress();
       loadMembersList();
       loadLoansList();
       loadAdminsList();
@@ -725,6 +746,60 @@
         document.getElementById('adminWelcomeName').textContent = user.name?.split(' ')[0] || 'Admin';
       }
     }
+
+    // ================ MEMBER PROGRESS TRACKER ================
+    function loadMemberProgress() {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      const regularMembers = members.filter(m => m.role !== 'admin').length;
+      
+      // Get target from storage or use default
+      const target = parseInt(localStorage.getItem('memberTarget')) || 20;
+      
+      // Update the target input
+      document.getElementById('memberTarget').value = target;
+      
+      // Calculate progress
+      const percentage = Math.min(100, Math.round((regularMembers / target) * 100));
+      const remaining = Math.max(0, target - regularMembers);
+      
+      // Update progress bar
+      document.getElementById('memberProgressBar').style.width = percentage + '%';
+      
+      // Update text with color based on progress
+      const progressText = document.getElementById('progressText');
+      progressText.textContent = `${regularMembers} / ${target} Members (${percentage}%)`;
+      
+      // Change color based on progress
+      if (percentage >= 100) {
+        document.getElementById('memberProgressBar').style.background = 'linear-gradient(90deg, var(--success), #1e7e34)';
+        progressText.style.color = 'var(--white)';
+      } else if (percentage >= 75) {
+        document.getElementById('memberProgressBar').style.background = 'linear-gradient(90deg, var(--primary), var(--primary-dark))';
+      } else if (percentage >= 50) {
+        document.getElementById('memberProgressBar').style.background = 'linear-gradient(90deg, var(--info), #138496)';
+      } else {
+        document.getElementById('memberProgressBar').style.background = 'linear-gradient(90deg, var(--warning), #e0a800)';
+        progressText.style.color = 'var(--black)';
+      }
+      
+      // Update stats text
+      document.getElementById('membersAdded').textContent = `${regularMembers} member${regularMembers !== 1 ? 's' : ''} added`;
+      document.getElementById('membersRemaining').textContent = `${remaining} spot${remaining !== 1 ? 's' : ''} remaining`;
+    }
+
+    function updateMemberTarget() {
+      const newTarget = parseInt(document.getElementById('memberTarget').value);
+      if (newTarget && newTarget > 0) {
+        localStorage.setItem('memberTarget', newTarget);
+        loadMemberProgress();
+        UIManager.showToast('✅ Member target updated!', 'success');
+      } else {
+        UIManager.showToast('Please enter a valid target number', 'error');
+      }
+    }
+
+    // Make function globally available
+    window.updateMemberTarget = updateMemberTarget;
 
     // ================ DASHBOARD STATS ================
     function loadDashboardStats() {
@@ -1072,6 +1147,7 @@
     closeAddMemberModal();
     loadMembersList();
     loadDashboardStats();
+    loadMemberProgress();
     
   } catch (error) {
     UIManager.showToast(error.message, 'error');
