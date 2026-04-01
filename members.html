@@ -7,9 +7,9 @@
   <!-- ================ PAGE TITLE ================ -->
   <title>Members - Savings Group Manager</title>
   
-  <!-- ================ PROFESSIONAL FAVICON - INSTANT ================ -->
-  <link rel="icon" href="icon.svg">
-  <link rel="apple-touch-icon" href="icon.svg">
+  <!-- ================ PROFESSIONAL FAVICON - BANK HOUSE ================ -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2320B2AA'/><rect x='20' y='50' width='60' height='35' fill='%23808080'/><polygon points='50,15 15,50 85,50' fill='%23B0B0B0'/><rect x='25' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='38' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='51' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='64' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='46' y='65' width='12' height='20' fill='%232F2F2F'/><circle cx='52' cy='75' r='2' fill='%23FFD700'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%2320B2AA'/><rect x='36' y='90' width='108' height='63' fill='%23808080'/><polygon points='90,27 27,90 153,90' fill='%23B0B0B0'/><rect x='45' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='68' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='91' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='114' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='82' y='117' width='22' height='36' fill='%232F2F2F'/><circle cx='93' cy='135' r='4' fill='%23FFD700'/></svg>">
   <meta name="msapplication-TileColor" content="#20B2AA">
   <meta name="theme-color" content="#20B2AA">
   
@@ -17,7 +17,6 @@
   <link rel="stylesheet" href="styles.css">
   
   <style>
-    /* Member management specific styles */
     .member-filters {
       display: flex;
       gap: 15px;
@@ -308,10 +307,9 @@
               <th>Status</th>
               <th>Joined</th>
               <th>Actions</th>
-            </tr>
-          </thead>
+             </thead>
           <tbody id="membersTableBody"></tbody>
-        </table>
+         </table>
       </div>
     </div>
 
@@ -332,6 +330,7 @@
             <option value="declining">Declining Balance</option>
             <option value="tiered">Tiered Growth</option>
             <option value="profit">Profit-Sharing (30%)</option>
+            <option value="cumulative">Cumulative (10% on Remaining)</option>
           </select>
         </div>
       </div>
@@ -343,7 +342,7 @@
       <div class="table-responsive">
         <table id="resultsTable">
           <thead>
-            <tr>
+             <tr>
               <th>Member</th>
               <th>Upfront</th>
               <th>Installments</th>
@@ -351,7 +350,7 @@
               <th>Installment Payout</th>
               <th>Total Payout</th>
               <th>Return %</th>
-            </tr>
+             </tr>
           </thead>
           <tbody id="resultsBody"></tbody>
           <tfoot id="summaryRow"></tfoot>
@@ -394,6 +393,11 @@
           <label>Membership Fee (K)</label>
           <input type="number" id="modalMembershipFee" value="50" readonly>
           <small style="color: var(--dark-gray);">Annual fee - charged once</small>
+        </div>
+        <div class="form-group">
+          <label>Social Fund (K)</label>
+          <input type="number" id="modalSocialFund" value="90" readonly>
+          <small style="color: var(--dark-gray);">Social fund contribution - charged once</small>
         </div>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
           <button type="submit" class="btn-primary" style="flex: 1;">Add Member</button>
@@ -444,29 +448,57 @@
         password: 'member123'
       };
       
-      const newMember = StorageManager.addMember(memberData);
-      
-      if (memberData.initialSavings > 0) {
+      try {
+        const newMember = StorageManager.addMember(memberData);
+        
+        // Create user login
+        StorageManager.createUser({
+          name: memberData.name,
+          email: memberData.email,
+          password: memberData.password,
+          role: 'member'
+        });
+        
+        // Add initial savings if any
+        if (memberData.initialSavings > 0) {
+          StorageManager.addTransaction({
+            memberId: newMember.id,
+            type: 'savings',
+            amount: memberData.initialSavings,
+            description: 'Initial savings deposit',
+            isFee: false
+          });
+        }
+        
+        // Add Membership Fee
+        const membershipFee = parseFloat(document.getElementById('modalMembershipFee').value) || 50;
         StorageManager.addTransaction({
           memberId: newMember.id,
-          type: 'savings',
-          amount: memberData.initialSavings,
-          description: 'Initial savings deposit'
+          type: 'fee',
+          amount: -membershipFee,
+          description: 'Annual membership fee',
+          isFee: true,
+          feeType: 'membership'
         });
+        
+        // Add Social Fund
+        const socialFund = parseFloat(document.getElementById('modalSocialFund').value) || 90;
+        StorageManager.addTransaction({
+          memberId: newMember.id,
+          type: 'fee',
+          amount: -socialFund,
+          description: 'Social Fund Contribution',
+          isFee: true,
+          feeType: 'social_fund'
+        });
+        
+        alert('✅ Member added successfully!');
+        closeAddMemberModal();
+        loadMembers();
+        loadProjectedPayouts();
+      } catch (error) {
+        alert(error.message);
       }
-      
-      const feeAmount = parseFloat(document.getElementById('modalMembershipFee').value) || 50;
-      StorageManager.addTransaction({
-        memberId: newMember.id,
-        type: 'fee',
-        amount: -feeAmount,
-        description: 'Annual membership fee'
-      });
-      
-      alert('✅ Member added successfully!');
-      closeAddMemberModal();
-      loadMembers();
-      loadProjectedPayouts();
     }
 
     function loadMembers() {
@@ -474,7 +506,7 @@
       const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
       const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
       
-      window.allMembers = members; // Store for filtering
+      window.allMembers = members;
       window.memberLoans = loans;
       window.memberTransactions = transactions;
       
@@ -486,14 +518,15 @@
       tbody.innerHTML = '';
       
       membersToRender.forEach(member => {
-        if (member.role === 'admin') return; // Hide admin from member list
+        if (member.role === 'admin') return;
         
         const memberTransactions = window.memberTransactions.filter(t => t.memberId === member.id);
         const memberLoans = window.memberLoans.filter(l => l.memberId === member.id);
         
+        // FIX: Exclude fees from balance calculation
         const balance = memberTransactions.reduce((sum, t) => {
           if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
-          if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+          if (t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
           return sum;
         }, 0);
         
@@ -547,7 +580,6 @@
       
       let filtered = window.allMembers.filter(m => m.role !== 'admin');
       
-      // Apply search filter
       if (searchTerm) {
         filtered = filtered.filter(m => 
           m.name.toLowerCase().includes(searchTerm) ||
@@ -556,7 +588,6 @@
         );
       }
       
-      // Apply status filter
       if (statusFilter === 'active') {
         filtered = filtered.filter(m => m.status !== 'inactive');
       } else if (statusFilter === 'loans') {
@@ -584,6 +615,7 @@
       members.filter(m => m.role !== 'admin').forEach(member => {
         const memberTransactions = transactions.filter(t => t.memberId === member.id);
         
+        // FIX: Get upfront from savings transactions (not including fees)
         const upfront = memberTransactions
           .filter(t => t.type === 'savings' && t.description?.includes('initial'))
           .reduce((sum, t) => sum + t.amount, 0);
@@ -594,9 +626,9 @@
         
         const installment = months > 0 ? totalInstallments / months : 0;
         
-        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months });
-        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment });
-        const total = (upfrontResult || 0) + (installmentResult || 0);
+        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
+        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+        const total = upfrontResult + installmentResult;
         const totalContributed = upfront + totalInstallments;
         const returnPercent = totalContributed > 0 ? ((total - totalContributed) / totalContributed * 100).toFixed(1) : '0.0';
         
@@ -608,25 +640,27 @@
           <td><strong>${member.name}</strong></td>
           <td>${UIManager.formatCurrency(upfront)}</td>
           <td>${UIManager.formatCurrency(totalInstallments)}</td>
-          <td>${UIManager.formatCurrency(upfrontResult || 0)}</td>
-          <td>${UIManager.formatCurrency(installmentResult || 0)}</td>
+          <td>${UIManager.formatCurrency(upfrontResult)}</td>
+          <td>${UIManager.formatCurrency(installmentResult)}</td>
           <td><strong>${UIManager.formatCurrency(total)}</strong></td>
           <td class="${returnPercent >= 0 ? 'positive' : 'negative'}">+${returnPercent}%</td>
         `;
         tbody.appendChild(row);
       });
       
-      document.getElementById('summaryRow').innerHTML = `
-        <tr>
-          <td colspan="7" style="text-align: right; font-weight: bold;">
-            Total Payout: ${UIManager.formatCurrency(totalPayout)} | 
-            Highest: ${UIManager.formatCurrency(highestPayout)}
-          </td>
-        </tr>
-      `;
+      const summaryRow = document.getElementById('summaryRow');
+      if (summaryRow) {
+        summaryRow.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: right; font-weight: bold;">
+              Total Payout: ${UIManager.formatCurrency(totalPayout)} | 
+              Highest: ${UIManager.formatCurrency(highestPayout)}
+            </td>
+          </tr>
+        `;
+      }
     }
 
-    // Modal functions
     function openAddMemberModal() {
       document.getElementById('addMemberModal').classList.add('active');
     }
@@ -636,9 +670,8 @@
       document.getElementById('addMemberForm').reset();
     }
 
-    // Member actions
     window.editMember = function(memberId) {
-      window.location.href = `admin.html?edit=${memberId}`;
+      alert('Edit member: ' + memberId);
     };
 
     window.recordSavings = function(memberId) {
@@ -648,7 +681,8 @@
           memberId: memberId,
           type: 'savings',
           amount: parseFloat(amount),
-          description: 'Manual savings deposit'
+          description: 'Manual savings deposit',
+          isFee: false
         });
         loadMembers();
         loadProjectedPayouts();
@@ -656,7 +690,6 @@
       }
     };
 
-    // Export functions
     function showExportProgress() {
       document.getElementById('exportProgress').classList.add('active');
     }
@@ -678,7 +711,7 @@
           
           const balance = memberTransactions.reduce((sum, t) => {
             if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
-            if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+            if (t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
             return sum;
           }, 0);
           
@@ -699,7 +732,11 @@
           };
         });
         
-        ExportManager.toCSV(formattedData, 'member-directory');
+        if (ExportManager && ExportManager.toCSV) {
+          ExportManager.toCSV(formattedData, 'member-directory');
+        } else {
+          alert('Export feature not available');
+        }
         hideExportProgress();
       } catch (error) {
         console.error('Export error:', error);
@@ -712,7 +749,6 @@
       showExportProgress();
       try {
         const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
-        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
         
         const reportDiv = document.createElement('div');
         reportDiv.id = 'member-report';
@@ -727,39 +763,32 @@
                 <th style="padding: 12px;">Name</th>
                 <th style="padding: 12px;">Email</th>
                 <th style="padding: 12px;">Phone</th>
-                <th style="padding: 12px;">Balance</th>
-                <th style="padding: 12px;">Joined</th>
+                <th style="padding: 12px;">Join Date</th>
               </tr>
             </thead>
             <tbody>
         `;
         
         members.filter(m => m.role !== 'admin').forEach(member => {
-          const memberTransactions = transactions.filter(t => t.memberId === member.id);
-          const balance = memberTransactions.reduce((sum, t) => {
-            if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
-            if (t.type === 'fee' || t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
-            return sum;
-          }, 0);
-          
           html += `
             <tr>
               <td style="padding: 10px; border: 1px solid #ddd;"><strong>${member.name}</strong></td>
               <td style="padding: 10px; border: 1px solid #ddd;">${member.email}</td>
               <td style="padding: 10px; border: 1px solid #ddd;">${member.phone || '-'}</td>
-              <td style="padding: 10px; border: 1px solid #ddd; ${balance >= 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
-                K${balance.toFixed(2)}
-              </td>
               <td style="padding: 10px; border: 1px solid #ddd;">${new Date(member.joinedDate).toLocaleDateString()}</td>
             </tr>
           `;
         });
         
-        html += `</tbody></table></div>`;
-        
+        html += `</tbody></table>`;
         reportDiv.innerHTML = html;
         document.body.appendChild(reportDiv);
-        ExportManager.toPDF('member-report', 'member-directory', 'Member Directory Report');
+        
+        if (ExportManager && ExportManager.toPDF) {
+          ExportManager.toPDF('member-report', 'member-directory', 'Member Directory Report');
+        } else {
+          alert('PDF export not available');
+        }
         setTimeout(() => { document.body.removeChild(reportDiv); hideExportProgress(); }, 1000);
       } catch (error) {
         console.error('PDF export error:', error);
