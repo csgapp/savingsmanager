@@ -229,6 +229,23 @@
     }
     
     @media (max-width: 768px) {
+      nav {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+      }
+      
+      .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+      
+      .nav-links a {
+        padding: 6px 10px;
+        font-size: 0.85rem;
+      }
+      
       .date-range {
         flex-direction: column;
       }
@@ -237,11 +254,64 @@
         grid-template-columns: 1fr;
       }
       
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      
+      table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+      
+      th, td {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+      }
+      
+      .panel {
+        padding: 16px;
+        margin: 16px auto;
+      }
+      
+      h2 {
+        font-size: 1.3rem;
+      }
+      
+      .filter-panel {
+        padding: 16px;
+      }
+      
+      .filter-panel .form-row {
+        gap: 12px;
+      }
+      
       #install-prompt {
         left: 10px;
         right: 10px;
         bottom: 10px;
         padding: 15px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .panel h2 {
+        font-size: 1.1rem;
+      }
+      
+      .stat-number {
+        font-size: 1.2rem;
+      }
+      
+      .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .filter-panel > div:last-child {
+        flex-direction: column;
       }
     }
   </style>
