@@ -7,7 +7,7 @@
   <!-- ================ PAGE TITLE ================ -->
   <title>Members - Savings Group Manager</title>
   
-  <!-- ================ PROFESSIONAL FAVICON - BANK HOUSE ================ -->
+  <!-- ================ BANK HOUSE FAVICON ================ -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2320B2AA'/><rect x='20' y='50' width='60' height='35' fill='%23808080'/><polygon points='50,15 15,50 85,50' fill='%23B0B0B0'/><rect x='25' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='38' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='51' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='64' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='46' y='65' width='12' height='20' fill='%232F2F2F'/><circle cx='52' cy='75' r='2' fill='%23FFD700'/></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%2320B2AA'/><rect x='36' y='90' width='108' height='63' fill='%23808080'/><polygon points='90,27 27,90 153,90' fill='%23B0B0B0'/><rect x='45' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='68' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='91' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='114' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='82' y='117' width='22' height='36' fill='%232F2F2F'/><circle cx='93' cy='135' r='4' fill='%23FFD700'/></svg>">
   <meta name="msapplication-TileColor" content="#20B2AA">
@@ -309,7 +309,7 @@
               <th>Actions</th>
              </thead>
           <tbody id="membersTableBody"></tbody>
-         </table>
+          </table>
       </div>
     </div>
 
@@ -342,7 +342,7 @@
       <div class="table-responsive">
         <table id="resultsTable">
           <thead>
-             <tr>
+              <tr>
               <th>Member</th>
               <th>Upfront</th>
               <th>Installments</th>
@@ -350,11 +350,11 @@
               <th>Installment Payout</th>
               <th>Total Payout</th>
               <th>Return %</th>
-             </tr>
+              </tr>
           </thead>
           <tbody id="resultsBody"></tbody>
           <tfoot id="summaryRow"></tfoot>
-        </table>
+         </table>
       </div>
     </div>
   </div>
@@ -407,6 +407,53 @@
     </div>
   </div>
 
+  <!-- Edit Member Modal -->
+  <div id="editMemberModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Edit Member</h3>
+        <span class="close-modal" onclick="closeEditMemberModal()">&times;</span>
+      </div>
+      <form id="editMemberForm">
+        <input type="hidden" id="editMemberId">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="editMemberName" placeholder="Enter full name" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="editMemberEmail" placeholder="member@example.com" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="editMemberPhone" placeholder="+260 XXX XXX XXX">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Initial Savings (K)</label>
+            <input type="number" id="editInitialSavings" min="0" step="100">
+            <small style="color: var(--dark-gray);">Adjust if data entry error occurred</small>
+          </div>
+          <div class="form-group">
+            <label>Monthly Installment (K)</label>
+            <input type="number" id="editMonthlyInstallment" min="0" step="50">
+            <small style="color: var(--dark-gray);">For future contributions</small>
+          </div>
+        </div>
+        <div class="security-note" style="margin-top: 15px; background: var(--warning-light);">
+          <div class="security-icon">⚠️</div>
+          <div class="security-text">
+            <strong>Note:</strong> Changing initial savings will adjust the member's balance. Past transactions will be updated in the audit log.
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Save Changes</button>
+          <button type="button" onclick="closeEditMemberModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Export Progress Indicator -->
   <div id="exportProgress" class="export-progress">
     <div class="spinner"></div>
@@ -428,6 +475,7 @@
 
     function setupEventListeners() {
       document.getElementById('addMemberForm').addEventListener('submit', handleAddMember);
+      document.getElementById('editMemberForm').addEventListener('submit', handleEditMember);
       document.getElementById('logoutBtn').addEventListener('click', () => AuthManager.logout());
       document.getElementById('months').addEventListener('input', loadProjectedPayouts);
       document.getElementById('methodSelector').addEventListener('change', loadProjectedPayouts);
@@ -492,13 +540,77 @@
           feeType: 'social_fund'
         });
         
-        alert('✅ Member added successfully!');
+        UIManager.showToast('✅ Member added successfully!', 'success');
         closeAddMemberModal();
         loadMembers();
         loadProjectedPayouts();
       } catch (error) {
-        alert(error.message);
+        UIManager.showToast(error.message, 'error');
       }
+    }
+
+    function handleEditMember(e) {
+      e.preventDefault();
+      
+      const memberId = document.getElementById('editMemberId').value;
+      const newName = document.getElementById('editMemberName').value;
+      const newEmail = document.getElementById('editMemberEmail').value;
+      const newPhone = document.getElementById('editMemberPhone').value;
+      const newInitialSavings = parseFloat(document.getElementById('editInitialSavings').value) || 0;
+      const newMonthlyInstallment = parseFloat(document.getElementById('editMonthlyInstallment').value) || 0;
+      
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS);
+      const memberIndex = members.findIndex(m => m.id === memberId);
+      if (memberIndex === -1) return;
+      
+      const oldMember = { ...members[memberIndex] };
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS);
+      const initialTx = transactions.find(t => t.memberId === memberId && t.type === 'savings' && t.description?.includes('initial'));
+      const oldInitialSavings = initialTx ? initialTx.amount : 0;
+      
+      // Update member record
+      members[memberIndex].name = newName;
+      members[memberIndex].email = newEmail;
+      members[memberIndex].phone = newPhone;
+      members[memberIndex].monthlyInstallment = newMonthlyInstallment;
+      members[memberIndex].updatedAt = new Date().toISOString();
+      
+      // Update initial savings if changed
+      if (newInitialSavings !== oldInitialSavings) {
+        const savingsDiff = newInitialSavings - oldInitialSavings;
+        
+        if (initialTx) {
+          // Update existing transaction
+          initialTx.amount = newInitialSavings;
+          StorageManager.setItem('sgm_transactions', transactions);
+        } else if (newInitialSavings > 0) {
+          // Add new transaction if there wasn't one
+          StorageManager.addTransaction({
+            memberId: memberId,
+            type: 'savings',
+            amount: newInitialSavings,
+            description: 'Initial savings deposit (corrected)',
+            isFee: false
+          });
+        }
+        
+        // Update member balance
+        members[memberIndex].balance = (members[memberIndex].balance || 0) + savingsDiff;
+        members[memberIndex].totalSavings = (members[memberIndex].totalSavings || 0) + savingsDiff;
+      }
+      
+      StorageManager.setItem(StorageManager.KEYS.MEMBERS, members);
+      
+      // Audit log the change
+      StorageManager.audit('EDIT_MEMBER', memberId, {
+        old: { name: oldMember.name, email: oldMember.email, initialSavings: oldInitialSavings },
+        new: { name: newName, email: newEmail, initialSavings: newInitialSavings }
+      });
+      
+      UIManager.showToast('✅ Member updated successfully!', 'success');
+      closeEditMemberModal();
+      loadMembers();
+      loadProjectedPayouts();
     }
 
     function loadMembers() {
@@ -523,7 +635,7 @@
         const memberTransactions = window.memberTransactions.filter(t => t.memberId === member.id);
         const memberLoans = window.memberLoans.filter(l => l.memberId === member.id);
         
-        // FIX: Exclude fees from balance calculation
+        // Exclude fees from balance calculation
         const balance = memberTransactions.reduce((sum, t) => {
           if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
           if (t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
@@ -548,7 +660,7 @@
                 <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">ID: ${member.id.slice(-6)}</p>
               </div>
             </div>
-          </td>
+           </td>
           <td>
             ${member.email}<br>
             <span style="font-size: 0.75rem; color: var(--dark-gray);">${member.phone || 'No phone'}</span>
@@ -566,8 +678,8 @@
           <td><span class="status-badge status-active">Active</span></td>
           <td>${new Date(member.joinedDate).toLocaleDateString()}</td>
           <td>
-            <button onclick="editMember('${member.id}')" class="btn-small" style="margin-right: 5px;">✏️</button>
-            <button onclick="recordSavings('${member.id}')" class="btn-small" style="background: var(--success);">💰</button>
+            <button onclick="editMember('${member.id}')" class="btn-small" style="margin-right: 5px;" title="Edit Member">✏️</button>
+            <button onclick="recordSavings('${member.id}')" class="btn-small" style="background: var(--success);" title="Record Savings">💰</button>
           </td>
         `;
         tbody.appendChild(row);
@@ -601,85 +713,77 @@
     }
 
     function loadProjectedPayouts() {
-  const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
-  const months = parseInt(document.getElementById('months').value) || 8;
-  const method = document.getElementById('methodSelector').value;
-  const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
-  
-  const tbody = document.getElementById('resultsBody');
-  tbody.innerHTML = '';
-  
-  let highestPayout = 0;
-  let totalPayout = 0;
-  
-  members.filter(m => m.role !== 'admin').forEach(member => {
-    const memberTransactions = transactions.filter(t => t.memberId === member.id);
-    
-    // ONLY get savings transactions (excludes fees)
-    const savingsTransactions = memberTransactions.filter(t => t.type === 'savings');
-    
-    // Sort by date
-    savingsTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    // Find upfront: either marked as 'initial' OR the first savings transaction
-    let upfront = 0;
-    let totalInstallments = 0;
-    
-    const initialTx = savingsTransactions.find(t => 
-      t.description && t.description.toLowerCase().includes('initial')
-    );
-    
-    if (initialTx) {
-      upfront = initialTx.amount;
-      // Remaining savings are installments
-      totalInstallments = savingsTransactions
-        .filter(t => t.id !== initialTx.id)
-        .reduce((sum, t) => sum + t.amount, 0);
-    } else if (savingsTransactions.length > 0) {
-      // If no transaction marked as initial, use the first one as upfront
-      upfront = savingsTransactions[0].amount;
-      totalInstallments = savingsTransactions
-        .slice(1)
-        .reduce((sum, t) => sum + t.amount, 0);
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+      const months = parseInt(document.getElementById('months').value) || 8;
+      const method = document.getElementById('methodSelector').value;
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+      
+      const tbody = document.getElementById('resultsBody');
+      tbody.innerHTML = '';
+      
+      let highestPayout = 0;
+      let totalPayout = 0;
+      
+      members.filter(m => m.role !== 'admin').forEach(member => {
+        const memberTransactions = transactions.filter(t => t.memberId === member.id);
+        
+        // Get savings transactions only
+        const savingsTransactions = memberTransactions.filter(t => t.type === 'savings');
+        savingsTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        let upfront = 0;
+        let totalInstallments = 0;
+        
+        const initialTx = savingsTransactions.find(t => 
+          t.description && t.description.toLowerCase().includes('initial')
+        );
+        
+        if (initialTx) {
+          upfront = initialTx.amount;
+          totalInstallments = savingsTransactions.filter(t => t.id !== initialTx.id).reduce((sum, t) => sum + t.amount, 0);
+        } else if (savingsTransactions.length > 0) {
+          upfront = savingsTransactions[0].amount;
+          totalInstallments = savingsTransactions.slice(1).reduce((sum, t) => sum + t.amount, 0);
+        }
+        
+        const installment = months > 0 ? totalInstallments / months : 0;
+        
+        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
+        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+        const total = upfrontResult + installmentResult;
+        const totalContributed = upfront + totalInstallments;
+        const returnPercent = totalContributed > 0 ? ((total - totalContributed) / totalContributed * 100).toFixed(1) : '0.0';
+        
+        if (total > highestPayout) highestPayout = total;
+        totalPayout += total;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${member.name}</strong></td>
+          <td>${UIManager.formatCurrency(upfront)}</td>
+          <td>${UIManager.formatCurrency(totalInstallments)}</td>
+          <td>${UIManager.formatCurrency(upfrontResult)}</td>
+          <td>${UIManager.formatCurrency(installmentResult)}</td>
+          <td><strong>${UIManager.formatCurrency(total)}</strong></td>
+          <td class="${returnPercent >= 0 ? 'positive' : 'negative'}">+${returnPercent}%</td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      const summaryRow = document.getElementById('summaryRow');
+      if (summaryRow) {
+        summaryRow.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: right; font-weight: bold;">
+              Total Payout: ${UIManager.formatCurrency(totalPayout)} | 
+              Highest: ${UIManager.formatCurrency(highestPayout)}
+            </td>
+          </tr>
+        `;
+      }
     }
-    
-    const installment = months > 0 ? totalInstallments / months : 0;
-    
-    const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
-    const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
-    const total = upfrontResult + installmentResult;
-    const totalContributed = upfront + totalInstallments;
-    const returnPercent = totalContributed > 0 ? ((total - totalContributed) / totalContributed * 100).toFixed(1) : '0.0';
-    
-    if (total > highestPayout) highestPayout = total;
-    totalPayout += total;
-    
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><strong>${member.name}</strong>\\
-      <td>${UIManager.formatCurrency(upfront)}\\
-      <td>${UIManager.formatCurrency(totalInstallments)}\\
-      <td>${UIManager.formatCurrency(upfrontResult)}\\
-      <td>${UIManager.formatCurrency(installmentResult)}\\
-      <td><strong>${UIManager.formatCurrency(total)}</strong>\\
-      <td class="${returnPercent >= 0 ? 'positive' : 'negative'}">+${returnPercent}%\\
-    `;
-    tbody.appendChild(row);
-  });
-  
-  const summaryRow = document.getElementById('summaryRow');
-  if (summaryRow) {
-    summaryRow.innerHTML = `
-        <tr>
-        <td colspan="7" style="text-align: right; font-weight: bold;">
-          Total Payout: ${UIManager.formatCurrency(totalPayout)} | 
-          Highest: ${UIManager.formatCurrency(highestPayout)}
-          </td>
-        </tr>
-    `;
-  }
-}
 
+    // Modal functions
     function openAddMemberModal() {
       document.getElementById('addMemberModal').classList.add('active');
     }
@@ -689,8 +793,31 @@
       document.getElementById('addMemberForm').reset();
     }
 
+    function openEditMemberModal(memberId) {
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS);
+      const member = members.find(m => m.id === memberId);
+      if (!member) return;
+      
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS);
+      const initialTx = transactions.find(t => t.memberId === memberId && t.type === 'savings' && t.description?.includes('initial'));
+      
+      document.getElementById('editMemberId').value = member.id;
+      document.getElementById('editMemberName').value = member.name;
+      document.getElementById('editMemberEmail').value = member.email;
+      document.getElementById('editMemberPhone').value = member.phone || '';
+      document.getElementById('editInitialSavings').value = initialTx ? initialTx.amount : member.initialSavings || 0;
+      document.getElementById('editMonthlyInstallment').value = member.monthlyInstallment || 0;
+      
+      document.getElementById('editMemberModal').classList.add('active');
+    }
+
+    function closeEditMemberModal() {
+      document.getElementById('editMemberModal').classList.remove('active');
+      document.getElementById('editMemberForm').reset();
+    }
+
     window.editMember = function(memberId) {
-      alert('Edit member: ' + memberId);
+      openEditMemberModal(memberId);
     };
 
     window.recordSavings = function(memberId) {
@@ -705,10 +832,11 @@
         });
         loadMembers();
         loadProjectedPayouts();
-        alert('✅ Savings recorded successfully!');
+        UIManager.showToast('✅ Savings recorded successfully!', 'success');
       }
     };
 
+    // Export functions
     function showExportProgress() {
       document.getElementById('exportProgress').classList.add('active');
     }
@@ -753,13 +881,11 @@
         
         if (ExportManager && ExportManager.toCSV) {
           ExportManager.toCSV(formattedData, 'member-directory');
-        } else {
-          alert('Export feature not available');
         }
         hideExportProgress();
       } catch (error) {
         console.error('Export error:', error);
-        alert('Error generating export');
+        UIManager.showToast('Error generating export', 'error');
         hideExportProgress();
       }
     };
@@ -783,19 +909,19 @@
                 <th style="padding: 12px;">Email</th>
                 <th style="padding: 12px;">Phone</th>
                 <th style="padding: 12px;">Join Date</th>
-              </tr>
+               </tr>
             </thead>
             <tbody>
         `;
         
         members.filter(m => m.role !== 'admin').forEach(member => {
           html += `
-            <tr>
+             <tr>
               <td style="padding: 10px; border: 1px solid #ddd;"><strong>${member.name}</strong></td>
               <td style="padding: 10px; border: 1px solid #ddd;">${member.email}</td>
               <td style="padding: 10px; border: 1px solid #ddd;">${member.phone || '-'}</td>
               <td style="padding: 10px; border: 1px solid #ddd;">${new Date(member.joinedDate).toLocaleDateString()}</td>
-            </tr>
+             </tr>
           `;
         });
         
@@ -805,19 +931,18 @@
         
         if (ExportManager && ExportManager.toPDF) {
           ExportManager.toPDF('member-report', 'member-directory', 'Member Directory Report');
-        } else {
-          alert('PDF export not available');
         }
         setTimeout(() => { document.body.removeChild(reportDiv); hideExportProgress(); }, 1000);
       } catch (error) {
         console.error('PDF export error:', error);
-        alert('Error generating PDF');
+        UIManager.showToast('Error generating PDF', 'error');
         hideExportProgress();
       }
     };
 
     window.openAddMemberModal = openAddMemberModal;
     window.closeAddMemberModal = closeAddMemberModal;
+    window.closeEditMemberModal = closeEditMemberModal;
   </script>
   
   <!-- ================ PWA INSTALL SCRIPT ================ -->
