@@ -7,7 +7,7 @@
   <!-- ================ PAGE TITLE ================ -->
   <title>Login - Savings Group Manager</title>
   
-  <!-- ================ PROFESSIONAL FAVICON ================ -->
+  <!-- ================ BANK HOUSE FAVICON ================ -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2320B2AA'/><rect x='20' y='50' width='60' height='35' fill='%23808080'/><polygon points='50,15 15,50 85,50' fill='%23B0B0B0'/><rect x='25' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='38' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='51' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='64' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='46' y='65' width='12' height='20' fill='%232F2F2F'/><circle cx='52' cy='75' r='2' fill='%23FFD700'/></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%2320B2AA'/><rect x='36' y='90' width='108' height='63' fill='%23808080'/><polygon points='90,27 27,90 153,90' fill='%23B0B0B0'/><rect x='45' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='68' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='91' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='114' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='82' y='117' width='22' height='36' fill='%232F2F2F'/><circle cx='93' cy='135' r='4' fill='%23FFD700'/></svg>">
   <meta name="msapplication-TileColor" content="#20B2AA">
@@ -98,6 +98,25 @@
       box-shadow: 0 0 0 3px rgba(38,166,154,0.1);
     }
     
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .checkbox-group input {
+      width: auto;
+      margin: 0;
+    }
+    
+    .checkbox-group label {
+      margin: 0;
+      font-weight: normal;
+      color: #6c757d;
+      cursor: pointer;
+    }
+    
     .forgot-link {
       display: block;
       text-align: right;
@@ -119,11 +138,44 @@
       cursor: pointer;
       transition: all 0.3s ease;
       margin-top: 10px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
     
     .btn-primary:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 20px rgba(38,166,154,0.3);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-primary .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+    
+    .btn-primary.loading .spinner {
+      display: inline-block;
+    }
+    
+    .btn-primary.loading .btn-text {
+      display: inline-block;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
     
     .setup-prompt {
@@ -167,6 +219,24 @@
       text-align: center;
     }
     
+    .footer-note {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e9ecef;
+      font-size: 12px;
+      color: #6c757d;
+    }
+    
+    .footer-note a {
+      color: #26A69A;
+      text-decoration: none;
+    }
+    
+    .footer-note a:hover {
+      text-decoration: underline;
+    }
+    
     @keyframes slideUp {
       from {
         opacity: 0;
@@ -197,10 +267,17 @@
         <div class="form-group">
           <label for="password">Password</label>
           <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
-          <a href="forgot-password.html" class="forgot-link">Forgot Password?</a>
         </div>
         
+        <div class="checkbox-group">
+          <input type="checkbox" id="rememberMe">
+          <label for="rememberMe">Remember me</label>
+        </div>
+        
+        <a href="#" id="forgotPasswordLink" class="forgot-link">Forgot Password?</a>
+        
         <button type="submit" id="loginBtn" class="btn-primary">
+          <span class="spinner"></span>
           <span class="btn-text">Login</span>
         </button>
       </form>
@@ -212,12 +289,26 @@
         <p>🚀 First time using Savings Group Manager?</p>
         <a href="setup.html" class="btn-setup">Create Admin Account</a>
       </div>
+      
+      <div class="footer-note">
+        <span>Version 3.0.0</span> • 
+        <span>Created with ❤️ by Tha for Savers</span>
+      </div>
     </div>
   </div>
 
   <script src="app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Check for saved credentials
+      const savedEmail = localStorage.getItem('saved_email');
+      const savedPassword = localStorage.getItem('saved_password');
+      if (savedEmail && savedPassword) {
+        document.getElementById('email').value = savedEmail;
+        document.getElementById('password').value = savedPassword;
+        document.getElementById('rememberMe').checked = true;
+      }
+      
       // Check if any admin exists
       const users = StorageManager.getItem(StorageManager.KEYS.USERS) || [];
       const adminExists = users.some(u => u.role === 'admin');
@@ -228,12 +319,19 @@
         setupPrompt.style.display = adminExists ? 'none' : 'block';
       }
       
+      // Handle forgot password
+      document.getElementById('forgotPasswordLink').addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('🔐 Forgot Password?\n\nPlease contact your group administrator to reset your password.\n\nIf you are the administrator, you can reset your password by clearing browser data and running setup again.');
+      });
+      
       // Handle login form submission
       document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
         const btn = document.getElementById('loginBtn');
         const msg = document.getElementById('loginMessage');
         
@@ -242,7 +340,7 @@
         msg.textContent = '';
         
         // Show loading state
-        btn.classList.add('btn-loading');
+        btn.classList.add('loading');
         btn.disabled = true;
         
         // Simulate network delay
@@ -251,6 +349,15 @@
             const user = StorageManager.authenticateUser(email, password);
             
             if (user) {
+              // Save credentials if remember me is checked
+              if (rememberMe) {
+                localStorage.setItem('saved_email', email);
+                localStorage.setItem('saved_password', password);
+              } else {
+                localStorage.removeItem('saved_email');
+                localStorage.removeItem('saved_password');
+              }
+              
               // Remove password from session storage
               const { password, ...userWithoutPassword } = user;
               AuthManager.setCurrentUser(userWithoutPassword);
@@ -263,7 +370,7 @@
               }
             } else {
               // Show error
-              btn.classList.remove('btn-loading');
+              btn.classList.remove('loading');
               btn.disabled = false;
               
               msg.textContent = 'Invalid email or password';
@@ -271,7 +378,7 @@
             }
           } catch (error) {
             console.error('Login error:', error);
-            btn.classList.remove('btn-loading');
+            btn.classList.remove('loading');
             btn.disabled = false;
             
             msg.textContent = 'An error occurred. Please try again.';

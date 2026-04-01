@@ -763,3 +763,157 @@ tbody tr {
 
 .hidden { display: none !important; }
 .visible { display: block !important; }
+
+/* ================ MODALS ================ */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: var(--white);
+  margin: auto;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--light-gray);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.modal-header h3 {
+  color: var(--white);
+  margin: 0;
+}
+
+.close-modal {
+  color: var(--white);
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+.close-modal:hover {
+  color: var(--light-gray);
+  transform: scale(1.2);
+}
+
+.modal form {
+  padding: var(--spacing-lg);
+}
+
+.modal .form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.modal .form-row {
+  margin-bottom: var(--spacing-md);
+}
+
+/* ================ EXPORT PROGRESS ================ */
+.export-progress {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--white);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 10000;
+  text-align: center;
+}
+
+.export-progress.active {
+  display: block;
+}
+
+.spinner {
+  border: 4px solid var(--light-gray);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--spacing-md);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================ STATUS BADGES ================ */
+.status-badge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.status-active {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.status-badge.status-inactive {
+  background-color: var(--danger-light);
+  color: var(--danger);
+}
+
+/* ================ SECURITY NOTES ================ */
+.security-note {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  align-items: flex-start;
+}
+
+.security-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.security-text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+}
+
+.security-text strong {
+  color: var(--black);
+}
