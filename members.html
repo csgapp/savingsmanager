@@ -601,65 +601,84 @@
     }
 
     function loadProjectedPayouts() {
-      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
-      const months = parseInt(document.getElementById('months').value) || 8;
-      const method = document.getElementById('methodSelector').value;
-      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
-      
-      const tbody = document.getElementById('resultsBody');
-      tbody.innerHTML = '';
-      
-      let highestPayout = 0;
-      let totalPayout = 0;
-      
-      members.filter(m => m.role !== 'admin').forEach(member => {
-        const memberTransactions = transactions.filter(t => t.memberId === member.id);
-        
-        // FIX: Get upfront from savings transactions (not including fees)
-        const upfront = memberTransactions
-          .filter(t => t.type === 'savings' && t.description?.includes('initial'))
-          .reduce((sum, t) => sum + t.amount, 0);
-        
-        const totalInstallments = memberTransactions
-          .filter(t => t.type === 'savings' && !t.description?.includes('initial'))
-          .reduce((sum, t) => sum + t.amount, 0);
-        
-        const installment = months > 0 ? totalInstallments / months : 0;
-        
-        const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
-        const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
-        const total = upfrontResult + installmentResult;
-        const totalContributed = upfront + totalInstallments;
-        const returnPercent = totalContributed > 0 ? ((total - totalContributed) / totalContributed * 100).toFixed(1) : '0.0';
-        
-        if (total > highestPayout) highestPayout = total;
-        totalPayout += total;
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td><strong>${member.name}</strong></td>
-          <td>${UIManager.formatCurrency(upfront)}</td>
-          <td>${UIManager.formatCurrency(totalInstallments)}</td>
-          <td>${UIManager.formatCurrency(upfrontResult)}</td>
-          <td>${UIManager.formatCurrency(installmentResult)}</td>
-          <td><strong>${UIManager.formatCurrency(total)}</strong></td>
-          <td class="${returnPercent >= 0 ? 'positive' : 'negative'}">+${returnPercent}%</td>
-        `;
-        tbody.appendChild(row);
-      });
-      
-      const summaryRow = document.getElementById('summaryRow');
-      if (summaryRow) {
-        summaryRow.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align: right; font-weight: bold;">
-              Total Payout: ${UIManager.formatCurrency(totalPayout)} | 
-              Highest: ${UIManager.formatCurrency(highestPayout)}
-            </td>
-          </tr>
-        `;
-      }
+  const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+  const months = parseInt(document.getElementById('months').value) || 8;
+  const method = document.getElementById('methodSelector').value;
+  const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+  
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+  
+  let highestPayout = 0;
+  let totalPayout = 0;
+  
+  members.filter(m => m.role !== 'admin').forEach(member => {
+    const memberTransactions = transactions.filter(t => t.memberId === member.id);
+    
+    // ONLY get savings transactions (excludes fees)
+    const savingsTransactions = memberTransactions.filter(t => t.type === 'savings');
+    
+    // Sort by date
+    savingsTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Find upfront: either marked as 'initial' OR the first savings transaction
+    let upfront = 0;
+    let totalInstallments = 0;
+    
+    const initialTx = savingsTransactions.find(t => 
+      t.description && t.description.toLowerCase().includes('initial')
+    );
+    
+    if (initialTx) {
+      upfront = initialTx.amount;
+      // Remaining savings are installments
+      totalInstallments = savingsTransactions
+        .filter(t => t.id !== initialTx.id)
+        .reduce((sum, t) => sum + t.amount, 0);
+    } else if (savingsTransactions.length > 0) {
+      // If no transaction marked as initial, use the first one as upfront
+      upfront = savingsTransactions[0].amount;
+      totalInstallments = savingsTransactions
+        .slice(1)
+        .reduce((sum, t) => sum + t.amount, 0);
     }
+    
+    const installment = months > 0 ? totalInstallments / months : 0;
+    
+    const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
+    const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
+    const total = upfrontResult + installmentResult;
+    const totalContributed = upfront + totalInstallments;
+    const returnPercent = totalContributed > 0 ? ((total - totalContributed) / totalContributed * 100).toFixed(1) : '0.0';
+    
+    if (total > highestPayout) highestPayout = total;
+    totalPayout += total;
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><strong>${member.name}</strong>\\
+      <td>${UIManager.formatCurrency(upfront)}\\
+      <td>${UIManager.formatCurrency(totalInstallments)}\\
+      <td>${UIManager.formatCurrency(upfrontResult)}\\
+      <td>${UIManager.formatCurrency(installmentResult)}\\
+      <td><strong>${UIManager.formatCurrency(total)}</strong>\\
+      <td class="${returnPercent >= 0 ? 'positive' : 'negative'}">+${returnPercent}%\\
+    `;
+    tbody.appendChild(row);
+  });
+  
+  const summaryRow = document.getElementById('summaryRow');
+  if (summaryRow) {
+    summaryRow.innerHTML = `
+        <tr>
+        <td colspan="7" style="text-align: right; font-weight: bold;">
+          Total Payout: ${UIManager.formatCurrency(totalPayout)} | 
+          Highest: ${UIManager.formatCurrency(highestPayout)}
+          </td>
+        </tr>
+    `;
+  }
+}
 
     function openAddMemberModal() {
       document.getElementById('addMemberModal').classList.add('active');
