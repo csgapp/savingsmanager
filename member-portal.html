@@ -613,6 +613,19 @@
         });
       });
       
+      // Dropdown toggle for mobile (click instead of hover)
+      document.querySelectorAll('.dropdown-toggle').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const dropdown = this.closest('.export-dropdown');
+          document.querySelectorAll('.export-dropdown.active').forEach(d => { if (d !== dropdown) d.classList.remove('active'); });
+          dropdown.classList.toggle('active');
+        });
+      });
+      document.addEventListener('click', function() {
+        document.querySelectorAll('.export-dropdown.active').forEach(d => d.classList.remove('active'));
+      });
+      
       document.getElementById('transactionPeriod').addEventListener('change', function() {
         const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
         loadMemberTransactions(currentMember?.id, activeFilter);

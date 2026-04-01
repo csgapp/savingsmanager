@@ -917,3 +917,74 @@ tbody tr {
 .security-text strong {
   color: var(--black);
 }
+
+/* ================ DROPDOWN MENUS ================ */
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-toggle {
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 220px;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--light-gray);
+  z-index: 100;
+  padding: var(--spacing-sm) 0;
+  margin-top: 4px;
+}
+
+.export-dropdown:hover .dropdown-menu,
+.export-dropdown.active .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu button,
+.dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--black);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  text-decoration: none;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.dropdown-menu button:hover,
+.dropdown-menu a:hover {
+  background: var(--off-white);
+  transform: none;
+}
+
+.dropdown-header {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--dark-gray);
+  letter-spacing: 1px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--light-gray);
+  margin: var(--spacing-xs) 0;
+}
