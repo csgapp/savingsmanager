@@ -1081,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname;
   const page = path.split('/').pop() || 'index.html';
   
-  const publicPages = ['login.html', 'forgot-password.html', 'reset-password.html', 'index.html', 'setup.html'];
+  const publicPages = ['login.html', 'forgot-password.html', 'rest-password.html', 'index.html', 'setup.html'];
   const protectedPages = ['members.html', 'shareout.html', 'history.html', 'charts.html', 'admin.html', 'member-portal.html'];
   
   if (protectedPages.includes(page) && !AuthManager.isAuthenticated()) {

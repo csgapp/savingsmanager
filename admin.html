@@ -672,6 +672,45 @@
     </div>
   </div>
 
+  <!-- ================ EDIT MEMBER MODAL ================ -->
+  <div id="editMemberModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Edit Member</h3>
+        <span class="close-modal" onclick="closeEditMemberModal()">&times;</span>
+      </div>
+      <form id="editMemberForm">
+        <input type="hidden" id="editMemberId">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="editMemberName" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="editMemberEmail" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="editMemberPhone">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Initial Savings (K)</label>
+            <input type="number" id="editInitialSavings" min="0" step="100">
+          </div>
+          <div class="form-group">
+            <label>Monthly Installment (K)</label>
+            <input type="number" id="editMonthlyInstallment" min="0" step="50">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Save Changes</button>
+          <button type="button" onclick="closeEditMemberModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Export Progress Indicator -->
   <div id="exportProgress" class="export-progress">
     <div class="spinner"></div>
@@ -731,6 +770,12 @@
           handleAddAdmin();
         });
       }
+
+      // Edit Member Form
+      document.getElementById('editMemberForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleEditMember();
+      });
 
       // Loan amount preview
       document.getElementById('modalLoanAmount').addEventListener('input', updateLoanPreview);
@@ -1227,8 +1272,63 @@
 
     // ================ MEMBER ACTIONS ================
     window.editMember = function(memberId) {
-      alert('Edit member: ' + memberId);
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS);
+      const member = members.find(m => m.id === memberId);
+      if (!member) return;
+
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS);
+      const initialTx = transactions.find(t => t.memberId === memberId && t.type === 'savings' && t.description?.toLowerCase().includes('initial'));
+
+      document.getElementById('editMemberId').value = member.id;
+      document.getElementById('editMemberName').value = member.name;
+      document.getElementById('editMemberEmail').value = member.email;
+      document.getElementById('editMemberPhone').value = member.phone || '';
+      document.getElementById('editInitialSavings').value = initialTx ? initialTx.amount : member.initialSavings || 0;
+      document.getElementById('editMonthlyInstallment').value = member.monthlyInstallment || 0;
+
+      document.getElementById('editMemberModal').classList.add('active');
     };
+
+    function closeEditMemberModal() {
+      document.getElementById('editMemberModal').classList.remove('active');
+      document.getElementById('editMemberForm').reset();
+    }
+
+    function handleEditMember(e) {
+      e.preventDefault();
+      const memberId = document.getElementById('editMemberId').value;
+      const newName = document.getElementById('editMemberName').value;
+      const newEmail = document.getElementById('editMemberEmail').value;
+      const newPhone = document.getElementById('editMemberPhone').value;
+      const newInitialSavings = parseFloat(document.getElementById('editInitialSavings').value) || 0;
+
+      const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS);
+      const memberIndex = members.findIndex(m => m.id === memberId);
+      if (memberIndex === -1) return;
+
+      members[memberIndex].name = newName;
+      members[memberIndex].email = newEmail;
+      members[memberIndex].phone = newPhone;
+      members[memberIndex].monthlyInstallment = parseFloat(document.getElementById('editMonthlyInstallment').value) || 0;
+      members[memberIndex].updatedAt = new Date().toISOString();
+
+      // Update initial savings transaction if changed
+      const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS);
+      const initialTx = transactions.find(t => t.memberId === memberId && t.type === 'savings' && t.description?.toLowerCase().includes('initial'));
+      if (initialTx && newInitialSavings !== initialTx.amount) {
+        const diff = newInitialSavings - initialTx.amount;
+        initialTx.amount = newInitialSavings;
+        StorageManager.setItem(StorageManager.KEYS.TRANSACTIONS, transactions);
+        members[memberIndex].balance = (members[memberIndex].balance || 0) + diff;
+        members[memberIndex].totalSavings = (members[memberIndex].totalSavings || 0) + diff;
+      }
+
+      StorageManager.setItem(StorageManager.KEYS.MEMBERS, members);
+      UIManager.showToast('Member updated successfully!', 'success');
+      closeEditMemberModal();
+      loadMembersList();
+      loadDashboardStats();
+    }
 
     window.viewMemberDetails = function(memberId) {
       window.location.href = `member-portal.html?view=${memberId}`;
@@ -1281,82 +1381,262 @@
 
     window.exportMembersCSV = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+
+        const formattedData = members.filter(m => m.role !== 'admin').map(member => {
+          const memberTransactions = transactions.filter(t => t.memberId === member.id);
+          const memberLoans = loans.filter(l => l.memberId === member.id);
+          const balance = memberTransactions.reduce((sum, t) => {
+            if (t.type === 'savings' || t.type === 'loan_payment') return sum + t.amount;
+            if (t.type === 'loan_disbursement') return sum - Math.abs(t.amount);
+            return sum;
+          }, 0);
+          const totalSavings = memberTransactions.filter(t => t.type === 'savings').reduce((sum, t) => sum + t.amount, 0);
+          const activeLoans = memberLoans.filter(l => l.status === 'active').length;
+          return {
+            'Member ID': member.id.slice(-8),
+            'Full Name': member.name,
+            'Email': member.email,
+            'Phone': member.phone || '-',
+            'Balance (K)': balance.toFixed(2),
+            'Total Savings (K)': totalSavings.toFixed(2),
+            'Active Loans': activeLoans,
+            'Join Date': new Date(member.joinedDate).toLocaleDateString(),
+            'Status': member.status || 'Active'
+          };
+        });
+        ExportManager.toCSV(formattedData, 'member-directory');
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting members CSV', 'error'); hideExportProgress(); }
     };
 
     window.exportMembersPDF = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const reportDiv = document.createElement('div');
+        reportDiv.id = 'member-report';
+        let html = '<h1 style="color: #183768; text-align: center;">Member Directory Report</h1>';
+        html += `<p style="text-align: center; color: #666;">Generated: ${new Date().toLocaleString()} | Total Members: ${members.filter(m => m.role !== 'admin').length}</p>`;
+        html += '<table style="width: 100%; border-collapse: collapse; margin-top: 30px;"><thead><tr style="background-color: #183768; color: white;"><th style="padding: 12px;">Name</th><th style="padding: 12px;">Email</th><th style="padding: 12px;">Phone</th><th style="padding: 12px;">Join Date</th><th style="padding: 12px;">Status</th></tr></thead><tbody>';
+        members.filter(m => m.role !== 'admin').forEach(m => {
+          html += `<tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>${m.name}</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${m.email}</td><td style="padding: 10px; border: 1px solid #ddd;">${m.phone || '-'}</td><td style="padding: 10px; border: 1px solid #ddd;">${new Date(m.joinedDate).toLocaleDateString()}</td><td style="padding: 10px; border: 1px solid #ddd;">${m.status || 'Active'}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        reportDiv.innerHTML = html;
+        document.body.appendChild(reportDiv);
+        ExportManager.toPDF('member-report', 'member-directory', 'Member Directory Report');
+        setTimeout(() => document.body.removeChild(reportDiv), 1000);
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting members PDF', 'error'); hideExportProgress(); }
     };
 
     window.exportMemberCards = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const reportDiv = document.createElement('div');
+        reportDiv.id = 'member-cards';
+        let html = '<h1 style="color: #183768; text-align: center;">Member ID Cards</h1><div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 30px;">';
+        members.filter(m => m.role !== 'admin').forEach(m => {
+          const initials = m.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+          html += `<div style="border: 2px solid #183768; border-radius: 12px; padding: 20px; text-align: center;"><div style="width: 60px; height: 60px; background: linear-gradient(135deg, #20B2AA, #1E7E74); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold;">${initials}</div><h3 style="margin: 0; color: #183768;">${m.name}</h3><p style="color: #666; margin: 5px 0;">ID: ${m.id.slice(-8)}</p><p style="color: #666; margin: 5px 0;">${m.email}</p><p style="color: #666; margin: 5px 0;">${m.phone || 'No phone'}</p><p style="font-size: 11px; color: #999; margin-top: 10px;">Joined: ${new Date(m.joinedDate).toLocaleDateString()}</p></div>`;
+        });
+        html += '</div>';
+        reportDiv.innerHTML = html;
+        document.body.appendChild(reportDiv);
+        ExportManager.toPDF('member-cards', 'member-cards', 'Member ID Cards');
+        setTimeout(() => document.body.removeChild(reportDiv), 1000);
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting member cards', 'error'); hideExportProgress(); }
     };
 
     window.exportMemberStats = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const regularMembers = members.filter(m => m.role !== 'admin');
+        const totalSavings = transactions.filter(t => t.type === 'savings').reduce((sum, t) => sum + t.amount, 0);
+        const activeLoans = loans.filter(l => l.status === 'active');
+        const avgBalance = regularMembers.length > 0 ? totalSavings / regularMembers.length : 0;
+        const data = [
+          { 'Metric': 'Total Members', 'Value': regularMembers.length },
+          { 'Metric': 'Total Savings (K)', 'Value': totalSavings.toFixed(2) },
+          { 'Metric': 'Average Balance (K)', 'Value': avgBalance.toFixed(2) },
+          { 'Metric': 'Active Loans', 'Value': activeLoans.length },
+          { 'Metric': 'Total Loan Value (K)', 'Value': activeLoans.reduce((s, l) => s + (l.remainingBalance || l.amount), 0).toFixed(2) },
+          { 'Metric': 'Members with Loans', 'Value': [...new Set(activeLoans.map(l => l.memberId))].length },
+          { 'Metric': 'Report Date', 'Value': new Date().toLocaleDateString() }
+        ];
+        ExportManager.toCSV(data, 'member-statistics');
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting stats', 'error'); hideExportProgress(); }
     };
 
     window.exportLoansCSV = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const formattedData = loans.map(loan => {
+          const member = members.find(m => m.id === loan.memberId);
+          return {
+            'Loan ID': loan.id.slice(-8),
+            'Member': member ? member.name : 'Unknown',
+            'Email': member ? member.email : 'Unknown',
+            'Amount (K)': loan.amount.toFixed(2),
+            'Interest Rate (%)': (loan.rate * 100).toFixed(1),
+            'Term (months)': loan.term,
+            'Monthly Payment (K)': (loan.monthlyPayment || 0).toFixed(2),
+            'Remaining Balance (K)': (loan.remainingBalance || loan.amount).toFixed(2),
+            'Issue Date': loan.issuedDate,
+            'Status': loan.status || 'active',
+            'Purpose': loan.purpose || '-'
+          };
+        });
+        ExportManager.toCSV(formattedData, 'loans-export');
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting loans', 'error'); hideExportProgress(); }
     };
 
     window.exportActiveLoansPDF = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const activeLoans = loans.filter(l => l.status === 'active');
+        const reportDiv = document.createElement('div');
+        reportDiv.id = 'active-loans-report';
+        let html = `<h1 style="color: #183768; text-align: center;">Active Loans Report</h1><p style="text-align: center; color: #666;">Generated: ${new Date().toLocaleString()} | Active Loans: ${activeLoans.length}</p>`;
+        html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;"><thead><tr style="background-color: #183768; color: white;"><th style="padding: 10px;">Member</th><th style="padding: 10px;">Amount</th><th style="padding: 10px;">Rate</th><th style="padding: 10px;">Term</th><th style="padding: 10px;">Monthly</th><th style="padding: 10px;">Remaining</th><th style="padding: 10px;">Status</th></tr></thead><tbody>';
+        activeLoans.forEach(loan => {
+          const member = members.find(m => m.id === loan.memberId);
+          html += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${member ? member.name : 'Unknown'}</td><td style="padding: 8px; border: 1px solid #ddd;">K${loan.amount.toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">${(loan.rate * 100).toFixed(1)}%</td><td style="padding: 8px; border: 1px solid #ddd;">${loan.term}mo</td><td style="padding: 8px; border: 1px solid #ddd;">K${(loan.monthlyPayment || 0).toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">K${(loan.remainingBalance || loan.amount).toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">Active</td></tr>`;
+        });
+        html += '</tbody></table>';
+        reportDiv.innerHTML = html;
+        document.body.appendChild(reportDiv);
+        ExportManager.toPDF('active-loans-report', 'active-loans', 'Active Loans Report');
+        setTimeout(() => document.body.removeChild(reportDiv), 1000);
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting active loans PDF', 'error'); hideExportProgress(); }
     };
 
     window.exportLoanSchedule = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const activeLoans = loans.filter(l => l.status === 'active');
+        const reportDiv = document.createElement('div');
+        reportDiv.id = 'loan-schedule-report';
+        let html = `<h1 style="color: #183768; text-align: center;">Loan Repayment Schedule</h1><p style="text-align: center; color: #666;">Generated: ${new Date().toLocaleString()}</p>`;
+        activeLoans.forEach(loan => {
+          const member = members.find(m => m.id === loan.memberId);
+          const monthlyPayment = loan.monthlyPayment || 0;
+          const remaining = loan.remainingBalance || loan.amount;
+          html += `<div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><h3 style="color: #183768;">${member ? member.name : 'Unknown'} - Loan #${loan.id.slice(-8)}</h3><p>Amount: K${loan.amount.toFixed(2)} | Rate: ${(loan.rate * 100).toFixed(1)}% | Term: ${loan.term} months | Monthly: K${monthlyPayment.toFixed(2)}</p><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background-color: #183768; color: white;"><th style="padding: 8px;">Payment #</th><th style="padding: 8px;">Amount</th><th style="padding: 8px;">Remaining After</th></tr></thead><tbody>`;
+          let tempRemaining = remaining;
+          for (let i = 1; i <= Math.min(loan.term, 12); i++) {
+            tempRemaining = Math.max(0, tempRemaining - monthlyPayment);
+            html += `<tr><td style="padding: 6px; border: 1px solid #ddd;">${i}</td><td style="padding: 6px; border: 1px solid #ddd;">K${monthlyPayment.toFixed(2)}</td><td style="padding: 6px; border: 1px solid #ddd;">K${tempRemaining.toFixed(2)}</td></tr>`;
+          }
+          html += '</tbody></table></div>';
+        });
+        reportDiv.innerHTML = html;
+        document.body.appendChild(reportDiv);
+        ExportManager.toPDF('loan-schedule-report', 'loan-repayment-schedule', 'Loan Repayment Schedule');
+        setTimeout(() => document.body.removeChild(reportDiv), 1000);
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting loan schedule', 'error'); hideExportProgress(); }
     };
 
     window.exportFinancialSummary = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const history = StorageManager.getItem(StorageManager.KEYS.SHAREOUT_HISTORY) || [];
+        const regularMembers = members.filter(m => m.role !== 'admin');
+        const totalSavings = transactions.filter(t => t.type === 'savings').reduce((s, t) => s + t.amount, 0);
+        const totalFees = transactions.filter(t => t.type === 'fee').reduce((s, t) => s + Math.abs(t.amount), 0);
+        const activeLoans = loans.filter(l => l.status === 'active');
+        const repaidLoans = loans.filter(l => l.status === 'repaid');
+        const totalLoanValue = loans.reduce((s, l) => s + l.amount, 0);
+        const totalInterest = repaidLoans.reduce((s, l) => s + (l.totalInterest || 0), 0);
+        const totalPayouts = history.reduce((s, h) => s + (h.payout || 0), 0);
+        const reportDiv = document.createElement('div');
+        reportDiv.id = 'financial-summary';
+        reportDiv.innerHTML = `<h1 style="color: #183768; text-align: center;">Financial Summary Report</h1>
+          <p style="text-align: center; color: #666;">Generated: ${new Date().toLocaleString()}</p>
+          <h2 style="color: #1e4282; margin-top: 30px;">Group Overview</h2>
+          <table style="width: 100%; border-collapse: collapse;"><thead><tr style="background-color: #183768; color: white;"><th style="padding: 12px; text-align: left;">Metric</th><th style="padding: 12px; text-align: right;">Value</th></tr></thead><tbody>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Members</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${regularMembers.length}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Savings Pool</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalSavings.toFixed(2)}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Fees Collected</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalFees.toFixed(2)}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Active Loans</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${activeLoans.length}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Loan Value</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalLoanValue.toFixed(2)}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Outstanding Loan Balance</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${activeLoans.reduce((s, l) => s + (l.remainingBalance || l.amount), 0).toFixed(2)}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Interest Earned (Repaid Loans)</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalInterest.toFixed(2)}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Share-Out Payouts</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalPayouts.toFixed(2)}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Share-Out Calculations</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${history.length}</td></tr>
+          </tbody></table>`;
+        document.body.appendChild(reportDiv);
+        ExportManager.toPDF('financial-summary', 'financial-summary', 'Financial Summary Report');
+        setTimeout(() => document.body.removeChild(reportDiv), 1000);
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting financial summary', 'error'); hideExportProgress(); }
     };
 
     window.exportGroupPerformance = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const transactions = StorageManager.getItem(StorageManager.KEYS.TRANSACTIONS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
+        const history = StorageManager.getItem(StorageManager.KEYS.SHAREOUT_HISTORY) || [];
+        const regularMembers = members.filter(m => m.role !== 'admin');
+        const totalSavings = transactions.filter(t => t.type === 'savings').reduce((s, t) => s + t.amount, 0);
+        const avgSavingsPerMember = regularMembers.length > 0 ? totalSavings / regularMembers.length : 0;
+        const loanRepaymentRate = loans.length > 0 ? (loans.filter(l => l.status === 'repaid').length / loans.length * 100) : 0;
+        const data = [
+          { 'KPI': 'Total Members', 'Value': regularMembers.length },
+          { 'KPI': 'Total Savings Pool (K)', 'Value': totalSavings.toFixed(2) },
+          { 'KPI': 'Average Savings per Member (K)', 'Value': avgSavingsPerMember.toFixed(2) },
+          { 'KPI': 'Total Loans Issued', 'Value': loans.length },
+          { 'KPI': 'Active Loans', 'Value': loans.filter(l => l.status === 'active').length },
+          { 'KPI': 'Repaid Loans', 'Value': loans.filter(l => l.status === 'repaid').length },
+          { 'KPI': 'Loan Repayment Rate (%)', 'Value': loanRepaymentRate.toFixed(1) },
+          { 'KPI': 'Total Share-Out Calculations', 'Value': history.length },
+          { 'KPI': 'Total Payouts (K)', 'Value': history.reduce((s, h) => s + (h.payout || 0), 0).toFixed(2) },
+          { 'KPI': 'Total Transactions', 'Value': transactions.length },
+          { 'KPI': 'Report Date', 'Value': new Date().toLocaleDateString() }
+        ];
+        ExportManager.toCSV(data, 'group-performance');
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting performance', 'error'); hideExportProgress(); }
     };
 
     window.exportAuditLog = function() {
       showExportProgress();
-      setTimeout(() => {
-        UIManager.showToast('Export feature ready - implement as needed', 'info');
+      try {
+        const auditLog = StorageManager.getItem(StorageManager.KEYS.AUDIT_LOG) || [];
+        const formattedData = auditLog.map(entry => ({
+          'Timestamp': entry.timestamp,
+          'Action': entry.action,
+          'Key': entry.key,
+          'Details': JSON.stringify(entry.details),
+          'User': entry.user || 'system'
+        }));
+        ExportManager.toCSV(formattedData, 'audit-log');
         hideExportProgress();
-      }, 500);
+      } catch (e) { console.error(e); UIManager.showToast('Error exporting audit log', 'error'); hideExportProgress(); }
     };
 
     // Make functions globally available
@@ -1366,6 +1646,7 @@
     window.closeLoanModal = closeLoanModal;
     window.openFeeModal = openFeeModal;
     window.closeFeeModal = closeFeeModal;
+    window.closeEditMemberModal = closeEditMemberModal;
   </script>
   
   <!-- ================ PWA INSTALL SCRIPT ================ -->

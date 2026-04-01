@@ -717,7 +717,7 @@
         row.innerHTML = `<td>${new Date(txn.date).toLocaleDateString()}</td><td><span class="${badgeClass}">${txn.type.toUpperCase()}</span></td><td>${txn.description || txn.type.replace('_', ' ')}</td><td class="${amountClass}">${amountSign}${UIManager.formatCurrency(Math.abs(txn.amount))}</td><td>${UIManager.formatCurrency(runningBalance)}</td><td><span class="status-badge status-active">Completed</span></td>`;
         tbody.appendChild(row);
       });
-      if (filteredCount === 0) tbody.innerHTML = `}<td colspan="6" style="text-align: center; padding: 40px;"><p>No ${filterType} transactions found</p></td></tr>`;
+      if (filteredCount === 0) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px;"><p>No ${filterType} transactions found</p></td></tr>`;
     }
 
     function loadMemberLoans(memberId) {
@@ -727,7 +727,7 @@
       const activeTbody = document.getElementById('memberLoansTableBody');
       activeTbody.innerHTML = '';
       if (activeLoans.length === 0) {
-        activeTbody.innerHTML = '}<td colspan="9" style="text-align: center; padding: 30px;"><p>No active loans</p></td></tr>';
+        activeTbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px;"><p>No active loans</p></td></tr>';
       } else {
         activeLoans.forEach(loan => {
           const loanDetails = CalculationEngine.run('loan', { loan: loan.amount, r: loan.rate, months: loan.term });
@@ -744,7 +744,7 @@
       const historyTbody = document.getElementById('loanHistoryTableBody');
       historyTbody.innerHTML = '';
       if (repaidLoans.length === 0) {
-        historyTbody.innerHTML = '}<td colspan="6" style="text-align: center; padding: 30px;"><p>No loan history</p></td></tr>';
+        historyTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;"><p>No loan history</p></td></tr>';
       } else {
         repaidLoans.forEach(loan => {
           const row = document.createElement('tr');
@@ -760,7 +760,7 @@
       const tbody = document.getElementById('savingsTableBody');
       tbody.innerHTML = '';
       if (savingsTransactions.length === 0) {
-        tbody.innerHTML = '}<td colspan="5" style="text-align: center; padding: 40px;"><div style="font-size: 2rem;">💰</div><p>Start saving to see your history here</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;"><div style="font-size: 2rem;">💰</div><p>Start saving to see your history here</p></td></tr>';
         return;
       }
       let runningBalance = 0;
@@ -816,7 +816,7 @@
       const tbody = document.getElementById('shareoutHistoryBody');
       tbody.innerHTML = '';
       if (memberHistory.length === 0) {
-        tbody.innerHTML = '}<td colspan="6" style="text-align: center; padding: 30px;"><p>No share-out history yet</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;"><p>No share-out history yet</p></td></tr>';
         return;
       }
       memberHistory.slice(-5).reverse().forEach(entry => {
