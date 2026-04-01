@@ -360,81 +360,29 @@
     </div>
   </div>
 
-  <!-- Footer -->
   <footer>
-    <div style="font-size: 48px; margin-bottom: 20px;">🏦</div>
-    <h3 style="color: white; margin-bottom: 20px;">Savings Group Manager</h3>
-    <p style="opacity: 0.8; max-width: 600px; margin: 0 auto 30px;">
-      Professional savings group management system. Trusted by groups across the country.
+  <div style="font-size: 48px; margin-bottom: 20px;">🏦</div>
+  <h3 style="color: white; margin-bottom: 20px;">Savings Group Manager</h3>
+  <p style="opacity: 0.8; max-width: 600px; margin: 0 auto 30px;">
+    Professional savings group management system. Trusted by groups across the country.
+  </p>
+  <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 30px;">
+    <a href="login.html" style="color: white; text-decoration: none;">Login</a>
+    <a href="#" style="color: white; text-decoration: none;">About</a>
+    <a href="#" style="color: white; text-decoration: none;">Contact</a>
+  </div>
+  <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; font-size: 13px; opacity: 0.8; margin-bottom: 20px;">
+    <span>📱 PWA Ready</span>
+    <span>🔒 Secure</span>
+    <span>📊 Real-time Analytics</span>
+  </div>
+  <div style="font-size: 12px; opacity: 0.7;">
+    <p style="opacity: 0.6; margin-top: 20px; font-size: 12px;">
+      Version 3.0.0 | Created with <span style="color: #0078D7;">&#9825;</span> by Tha for Savers
     </p>
-    <div style="display: flex; gap: 20px; justify-content: center;">
-      <a href="login.html" style="color: white; text-decoration: none;">Login</a>
-      <a href="#" style="color: white; text-decoration: none;">About</a>
-      <a href="#" style="color: white; text-decoration: none;">Contact</a>
-    </div>
-    <p style="opacity: 0.6; margin-top: 40px;">
-      © 2026 Savings Group Manager. All rights reserved.
-    </p>
-  </footer>
-
-  <script src="app.js"></script>
-  
-  <!-- ================ PWA INSTALL SCRIPT ================ -->
-  <script>
-    let deferredPrompt;
-    const installPrompt = document.getElementById('install-prompt');
-    const installBtn = document.getElementById('installBtn');
-    const installCloseBtn = document.getElementById('installCloseBtn');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      
-      setTimeout(() => {
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) return;
-        const lastDismissed = localStorage.getItem('pwa-install-dismissed');
-        if (lastDismissed) {
-          const daysAgo = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24);
-          if (daysAgo < 7) return;
-        }
-        installPrompt.classList.add('show');
-      }, 2000);
-    });
-
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) {
-        alert('To install, use the browser menu: Add to Home Screen');
-        return;
-      }
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`Install prompt outcome: ${outcome}`);
-      deferredPrompt = null;
-      installPrompt.classList.remove('show');
-    });
-
-    installCloseBtn.addEventListener('click', () => {
-      installPrompt.classList.remove('show');
-      localStorage.setItem('pwa-install-dismissed', Date.now());
-    });
-
-    window.addEventListener('appinstalled', (evt) => {
-      console.log('App was installed successfully');
-      installPrompt.classList.remove('show');
-      localStorage.removeItem('pwa-install-dismissed');
-    });
-
-    const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-    const isInStandaloneMode = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-    if (isIos() && !isInStandaloneMode()) {
-      setTimeout(() => {
-        if (!localStorage.getItem('ios-instructions-shown')) {
-          alert('📱 Install this app on iPhone:\n\n1. Tap Share button\n2. Scroll down\n3. Tap "Add to Home Screen"');
-          localStorage.setItem('ios-instructions-shown', Date.now());
-        }
-      }, 3000);
-    }
-  </script>
-</body>
-</html>
+  </div>
+  <p style="opacity: 0.6; margin-top: 20px;">
+    © 2026 Savings Group Manager. All rights reserved.
+  </p>
+</footer>   
+ 
