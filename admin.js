@@ -168,7 +168,7 @@ function loadLoansList() {
       <td>${loan.issuedDate}</td>
       <td>${(loan.rate * 100).toFixed(1)}%</td>
       <td>${loan.term} months</td>
-      <td>${UIManager.formatCurrency(loan.remainingBalance || loan.amount)}</td>
+      <td>${UIManager.formatCurrency(loan.remainingBalance || loan.totalPayment || loan.amount)}</td>
       <td><span class="badge active">Active</span></td>
       <td>
         <button onclick="recordPayment('${loan.id}')" class="btn-small">Record Payment</button>

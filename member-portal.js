@@ -128,7 +128,7 @@ function updateMemberStats(memberId) {
     .reduce((sum, l) => sum + (l.totalInterest || 0), 0);
   
   const activeLoans = memberLoans.filter(l => l.status === 'active');
-  const outstandingBalance = activeLoans.reduce((sum, l) => sum + (l.remainingBalance || l.amount), 0);
+  const outstandingBalance = activeLoans.reduce((sum, l) => sum + (l.remainingBalance || l.totalPayment || l.amount), 0);
   
   const lastPayout = memberHistory.length > 0 ? memberHistory[memberHistory.length - 1].payout : 0;
   
@@ -224,9 +224,10 @@ function loadMemberLoans(memberId) {
       activeLoans.forEach(loan => {
         const loanDetails = CalculationEngine.run('loan', { loan: loan.amount, r: loan.rate, months: loan.term });
         const monthlyPayment = loan.monthlyPayment || loanDetails.monthlyPayment;
-        const remaining = loan.remainingBalance || loan.amount;
-        const paid = loan.amount - remaining;
-        const progressPercent = ((paid / loan.amount) * 100).toFixed(1);
+        const totalOwed = loan.totalPayment || loanDetails.totalPayment || loan.amount;
+        const remaining = loan.remainingBalance || totalOwed;
+        const paid = totalOwed - remaining;
+        const progressPercent = ((paid / totalOwed) * 100).toFixed(1);
         
         const row = document.createElement('tr');
         row.innerHTML = `

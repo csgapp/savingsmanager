@@ -9,7 +9,7 @@ const CONFIG = {
   VERSION: '3.0.0',
   DEFAULT_RATE: 0.10,
   INTEREST_RATE: 0.10,
-  LOAN_INTEREST_RATE: 0.15,
+  LOAN_INTEREST_RATE: 0.10,
   MEMBERSHIP_FEE: 50,
   SOCIAL_FUND_FEE: 90,
   OTHER_FEES: 25,
@@ -155,19 +155,29 @@ const CalculationEngine = {
   },
 
   calculateLoan(principal, rate, months) {
-    if (!principal || principal <= 0) return { monthlyPayment: 0, totalPayment: 0, totalInterest: 0 };
-    const monthlyRate = rate / 12;
-    if (monthlyRate === 0) {
-      const payment = principal / months;
-      return { monthlyPayment: payment, totalPayment: principal, totalInterest: 0 };
-    }
-    const payment = principal * monthlyRate * Math.pow(1 + monthlyRate, months) / 
-                   (Math.pow(1 + monthlyRate, months) - 1);
+    if (!principal || principal <= 0) return { monthlyPayment: 0, totalPayment: 0, totalInterest: 0, interestAmount: 0 };
+    const interestAmount = principal * rate;
+    const totalPayment = principal + interestAmount;
+    const monthlyPayment = months > 0 ? totalPayment / months : totalPayment;
     return {
-      monthlyPayment: payment,
-      totalPayment: payment * months,
-      totalInterest: (payment * months) - principal
+      monthlyPayment,
+      totalPayment,
+      totalInterest: interestAmount,
+      interestAmount
     };
+  },
+
+  applyPenalty(loan) {
+    if (!loan || loan.status !== 'active') return loan;
+    const outstanding = loan.remainingBalance || 0;
+    if (outstanding <= 0) return loan;
+    const penalty = outstanding * 0.10;
+    loan.remainingBalance = outstanding + penalty;
+    loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
+    loan.totalInterest = (loan.totalInterest || 0) + penalty;
+    loan.totalPayment = (loan.totalPayment || 0) + penalty;
+    loan.lastPenaltyDate = new Date().toISOString().split('T')[0];
+    return loan;
   }
 };
 
@@ -413,10 +423,12 @@ const StorageManager = {
       monthlyPayment: loanDetails.monthlyPayment,
       totalInterest: loanDetails.totalInterest,
       totalPayment: loanDetails.totalPayment,
+      interestAmount: loanDetails.interestAmount,
       status: 'active',
       issuedDate: new Date().toISOString().split('T')[0],
-      remainingBalance: loanData.amount,
+      remainingBalance: loanDetails.totalPayment,
       paymentsMade: 0,
+      penaltyCharged: 0,
       createdAt: new Date().toISOString()
     };
     
@@ -447,8 +459,18 @@ const StorageManager = {
     const loan = loans.find(l => l.id === loanId);
     
     if (!loan) throw new Error('Loan not found');
+
+    // Apply monthly penalty on outstanding balance
+    const today = new Date().toISOString().split('T')[0];
+    const lastPenaltyDate = loan.lastPenaltyDate || loan.issuedDate;
+    const monthsSincePenalty = Math.floor((new Date(today) - new Date(lastPenaltyDate)) / (1000 * 60 * 60 * 24 * 30));
+    if (monthsSincePenalty > 0 && (loan.remainingBalance || 0) > 0) {
+      for (let i = 0; i < monthsSincePenalty; i++) {
+        CalculationEngine.applyPenalty(loan);
+      }
+    }
     
-    loan.remainingBalance = (loan.remainingBalance || loan.amount) - amount;
+    loan.remainingBalance = (loan.remainingBalance || loan.totalPayment || loan.amount) - amount;
     loan.paymentsMade = (loan.paymentsMade || 0) + 1;
     
     if (loan.remainingBalance <= 0) {
@@ -1047,7 +1069,7 @@ const ExportManager = {
         'Term (months)': loan.term,
         'Issue Date': loan.issuedDate,
         'Monthly Payment (K)': (loan.monthlyPayment || 0).toFixed(2),
-        'Remaining Balance (K)': (loan.remainingBalance || loan.amount).toFixed(2),
+        'Remaining Balance (K)': (loan.remainingBalance || loan.totalPayment || loan.amount).toFixed(2),
         'Payments Made': loan.paymentsMade || 0,
         'Total Interest (K)': (loan.totalInterest || 0).toFixed(2),
         'Status': loan.status || 'active',

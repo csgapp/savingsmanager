@@ -610,7 +610,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Interest Rate (%)</label>
-            <input type="number" id="modalLoanRate" value="15" step="0.1" min="0" max="100">
+            <input type="number" id="modalLoanRate" value="10" step="0.1" min="0" max="100">
           </div>
           <div class="form-group">
             <label>Term (months)</label>
@@ -862,7 +862,7 @@
       
       const activeLoans = loans.filter(l => l.status === 'active');
       document.getElementById('activeLoans').textContent = activeLoans.length;
-      const activeLoanValue = activeLoans.reduce((sum, l) => sum + (l.remainingBalance || l.amount), 0);
+      const activeLoanValue = activeLoans.reduce((sum, l) => sum + (l.remainingBalance || l.totalPayment || l.amount), 0);
       document.getElementById('activeLoanValue').textContent = UIManager.formatCurrency(activeLoanValue);
       
       const totalInterest = loans
@@ -1088,7 +1088,7 @@
           <td>${(loan.rate * 100).toFixed(1)}%</td>
           <td>${loan.term} months</td>
           <td>${UIManager.formatCurrency(loan.monthlyPayment || 0)}</td>
-          <td style="font-weight: bold; color: var(--secondary);">${UIManager.formatCurrency(loan.remainingBalance || loan.amount)}</td>
+          <td style="font-weight: bold; color: var(--secondary);">${UIManager.formatCurrency(loan.remainingBalance || loan.totalPayment || loan.amount)}</td>
           <td><span class="status-badge status-active">Active</span></td>
           <td>
             <button onclick="recordLoanPayment('${loan.id}')" class="btn-small" style="background: var(--success);">💰 Pay</button>
@@ -1376,9 +1376,9 @@
       const payments = transactions.filter(t => t.memberId === loan.memberId && t.type === 'loan_payment');
       const totalPaid = payments.reduce((s, t) => s + t.amount, 0);
       const monthlyPayment = loan.monthlyPayment || 0;
-      const remaining = loan.remainingBalance || loan.amount;
+      const remaining = loan.remainingBalance || loan.totalPayment || loan.amount;
       const interestRate = (loan.rate * 100).toFixed(1);
-      const totalInterest = (loan.amount * loan.rate * loan.term / 12).toFixed(2);
+      const totalInterest = (loan.totalInterest || loan.amount * loan.rate).toFixed(2);
 
       // Create and show a details modal
       let existingModal = document.getElementById('loanDetailsModal');
@@ -1407,7 +1407,7 @@
             <table style="width: 100%; border-collapse: collapse;">
               <tbody>
                 <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;">Loan Amount</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">K${loan.amount.toFixed(2)}</td></tr>
-                <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;">Interest Rate</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${interestRate}% (${loan.rate >= 0.01 ? 'monthly' : 'annual'})</td></tr>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;">Interest Rate</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${interestRate}% (flat)</td></tr>
                 <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;">Term</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${loan.term} months</td></tr>
                 <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;">Monthly Payment</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">K${monthlyPayment.toFixed(2)}</td></tr>
                 <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: #666;">Total Interest</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: #856404;">K${totalInterest}</td></tr>
@@ -1524,7 +1524,7 @@
           { 'Metric': 'Total Savings (K)', 'Value': totalSavings.toFixed(2) },
           { 'Metric': 'Average Balance (K)', 'Value': avgBalance.toFixed(2) },
           { 'Metric': 'Active Loans', 'Value': activeLoans.length },
-          { 'Metric': 'Total Loan Value (K)', 'Value': activeLoans.reduce((s, l) => s + (l.remainingBalance || l.amount), 0).toFixed(2) },
+          { 'Metric': 'Total Loan Value (K)', 'Value': activeLoans.reduce((s, l) => s + (l.remainingBalance || l.totalPayment || l.amount), 0).toFixed(2) },
           { 'Metric': 'Members with Loans', 'Value': [...new Set(activeLoans.map(l => l.memberId))].length },
           { 'Metric': 'Report Date', 'Value': new Date().toLocaleDateString() }
         ];
@@ -1548,7 +1548,7 @@
             'Interest Rate (%)': (loan.rate * 100).toFixed(1),
             'Term (months)': loan.term,
             'Monthly Payment (K)': (loan.monthlyPayment || 0).toFixed(2),
-            'Remaining Balance (K)': (loan.remainingBalance || loan.amount).toFixed(2),
+            'Remaining Balance (K)': (loan.remainingBalance || loan.totalPayment || loan.amount).toFixed(2),
             'Issue Date': loan.issuedDate,
             'Status': loan.status || 'active',
             'Purpose': loan.purpose || '-'
@@ -1571,7 +1571,7 @@
         html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;"><thead><tr style="background-color: #183768; color: white;"><th style="padding: 10px;">Member</th><th style="padding: 10px;">Amount</th><th style="padding: 10px;">Rate</th><th style="padding: 10px;">Term</th><th style="padding: 10px;">Monthly</th><th style="padding: 10px;">Remaining</th><th style="padding: 10px;">Status</th></tr></thead><tbody>';
         activeLoans.forEach(loan => {
           const member = members.find(m => m.id === loan.memberId);
-          html += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${member ? member.name : 'Unknown'}</td><td style="padding: 8px; border: 1px solid #ddd;">K${loan.amount.toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">${(loan.rate * 100).toFixed(1)}%</td><td style="padding: 8px; border: 1px solid #ddd;">${loan.term}mo</td><td style="padding: 8px; border: 1px solid #ddd;">K${(loan.monthlyPayment || 0).toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">K${(loan.remainingBalance || loan.amount).toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">Active</td></tr>`;
+          html += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${member ? member.name : 'Unknown'}</td><td style="padding: 8px; border: 1px solid #ddd;">K${loan.amount.toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">${(loan.rate * 100).toFixed(1)}%</td><td style="padding: 8px; border: 1px solid #ddd;">${loan.term}mo</td><td style="padding: 8px; border: 1px solid #ddd;">K${(loan.monthlyPayment || 0).toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">K${(loan.remainingBalance || loan.totalPayment || loan.amount).toFixed(2)}</td><td style="padding: 8px; border: 1px solid #ddd;">Active</td></tr>`;
         });
         html += '</tbody></table>';
         reportDiv.innerHTML = html;
@@ -1594,7 +1594,7 @@
         activeLoans.forEach(loan => {
           const member = members.find(m => m.id === loan.memberId);
           const monthlyPayment = loan.monthlyPayment || 0;
-          const remaining = loan.remainingBalance || loan.amount;
+          const remaining = loan.remainingBalance || loan.totalPayment || loan.amount;
           html += `<div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><h3 style="color: #183768;">${member ? member.name : 'Unknown'} - Loan #${loan.id.slice(-8)}</h3><p>Amount: K${loan.amount.toFixed(2)} | Rate: ${(loan.rate * 100).toFixed(1)}% | Term: ${loan.term} months | Monthly: K${monthlyPayment.toFixed(2)}</p><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background-color: #183768; color: white;"><th style="padding: 8px;">Payment #</th><th style="padding: 8px;">Amount</th><th style="padding: 8px;">Remaining After</th></tr></thead><tbody>`;
           let tempRemaining = remaining;
           for (let i = 1; i <= Math.min(loan.term, 12); i++) {
@@ -1637,7 +1637,7 @@
             <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Fees Collected</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalFees.toFixed(2)}</td></tr>
             <tr><td style="padding: 10px; border: 1px solid #ddd;">Active Loans</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${activeLoans.length}</td></tr>
             <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Loan Value</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalLoanValue.toFixed(2)}</td></tr>
-            <tr><td style="padding: 10px; border: 1px solid #ddd;">Outstanding Loan Balance</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${activeLoans.reduce((s, l) => s + (l.remainingBalance || l.amount), 0).toFixed(2)}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #ddd;">Outstanding Loan Balance</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${activeLoans.reduce((s, l) => s + (l.remainingBalance || l.totalPayment || l.amount), 0).toFixed(2)}</td></tr>
             <tr><td style="padding: 10px; border: 1px solid #ddd;">Interest Earned (Repaid Loans)</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalInterest.toFixed(2)}</td></tr>
             <tr><td style="padding: 10px; border: 1px solid #ddd;">Total Share-Out Payouts</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">K${totalPayouts.toFixed(2)}</td></tr>
             <tr><td style="padding: 10px; border: 1px solid #ddd;">Share-Out Calculations</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${history.length}</td></tr>
