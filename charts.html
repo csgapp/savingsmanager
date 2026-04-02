@@ -529,6 +529,7 @@
       let charts = {};
       let currentDays = 30;
 
+      StorageManager.refreshLoans();
       initializeCharts();
       loadData();
       setupEventListeners();

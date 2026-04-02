@@ -454,21 +454,40 @@ const StorageManager = {
     return newLoan;
   },
 
+  checkAndApplyPenalty(loan) {
+    if (!loan || loan.status !== 'active') return loan;
+    const outstanding = loan.remainingBalance || 0;
+    if (outstanding <= 0) return loan;
+    const today = new Date().toISOString().split('T')[0];
+    const lastPenaltyDate = loan.lastPenaltyDate || loan.issuedDate;
+    const monthsSincePenalty = Math.floor((new Date(today) - new Date(lastPenaltyDate)) / (1000 * 60 * 60 * 24 * 30));
+    if (monthsSincePenalty > 0) {
+      for (let i = 0; i < monthsSincePenalty; i++) {
+        CalculationEngine.applyPenalty(loan);
+      }
+    }
+    return loan;
+  },
+
+  refreshLoans() {
+    const loans = this.getItem(this.KEYS.LOANS) || [];
+    let changed = false;
+    loans.forEach(loan => {
+      const before = loan.remainingBalance;
+      this.checkAndApplyPenalty(loan);
+      if (loan.remainingBalance !== before) changed = true;
+    });
+    if (changed) this.setItem(this.KEYS.LOANS, loans);
+    return loans;
+  },
+
   recordLoanPayment(loanId, amount) {
     const loans = this.getItem(this.KEYS.LOANS);
     const loan = loans.find(l => l.id === loanId);
     
     if (!loan) throw new Error('Loan not found');
 
-    // Apply monthly penalty on outstanding balance
-    const today = new Date().toISOString().split('T')[0];
-    const lastPenaltyDate = loan.lastPenaltyDate || loan.issuedDate;
-    const monthsSincePenalty = Math.floor((new Date(today) - new Date(lastPenaltyDate)) / (1000 * 60 * 60 * 24 * 30));
-    if (monthsSincePenalty > 0 && (loan.remainingBalance || 0) > 0) {
-      for (let i = 0; i < monthsSincePenalty; i++) {
-        CalculationEngine.applyPenalty(loan);
-      }
-    }
+    this.checkAndApplyPenalty(loan);
     
     loan.remainingBalance = (loan.remainingBalance || loan.totalPayment || loan.amount) - amount;
     loan.paymentsMade = (loan.paymentsMade || 0) + 1;
