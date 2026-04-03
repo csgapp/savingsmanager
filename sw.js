@@ -1,5 +1,5 @@
 // ================ SAVINGS GROUP MANAGER - SERVICE WORKER ================
-const CACHE_NAME = 'savings-group-manager-v1';
+const CACHE_NAME = 'savings-group-manager-v2';
 
 // List of all files to cache for offline use
 const urlsToCache = [

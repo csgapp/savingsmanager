@@ -1,0 +1,33 @@
+{
+  "name": "savings-group-manager",
+  "version": "1.0.0",
+  "description": "Professional Group Savings System",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.savingsgroup.manager",
+    "productName": "Savings Group Manager",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "*.html",
+      "*.js",
+      "*.css",
+      "*.json",
+      "sw.js",
+      "manifest.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "Bank icon.png"
+    }
+  }
+}

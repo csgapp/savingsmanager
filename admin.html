@@ -508,6 +508,13 @@
               <p style="margin: 0; font-size: 0.75rem; color: var(--dark-gray);">Upcoming payments</p>
             </div>
           </button>
+          <button onclick="showVerifyScrollModal()" class="export-btn" style="background: #7b1fa2; color: white;">
+            <span style="font-size: 1.2rem;">📜</span>
+            <div style="text-align: left;">
+              <strong style="color: white;">Verify Scroll</strong>
+              <p style="margin: 0; font-size: 0.75rem; color: rgba(255,255,255,0.8);">Validate loan entries</p>
+            </div>
+          </button>
         </div>
       </div>
     </div>
@@ -1763,6 +1770,15 @@
           localStorage.setItem('ios-instructions-shown', Date.now());
         }
       }, 3000);
+    }
+
+    // ================ SERVICE WORKER ================
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW registration failed:', err));
+      });
     }
   </script>
 </body>
