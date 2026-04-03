@@ -498,10 +498,14 @@ const StorageManager = {
     
     if (!loan) throw new Error('Loan not found');
 
-    this.checkAndApplyPenalty(loan);
-    
+    // FIRST: Deduct the payment
     loan.remainingBalance = (loan.remainingBalance || loan.totalPayment || loan.amount) - amount;
     loan.paymentsMade = (loan.paymentsMade || 0) + 1;
+    
+    // THEN: Apply penalty on new remaining balance (if still active)
+    if (loan.remainingBalance > 0 && loan.status === 'active') {
+      this.checkAndApplyPenalty(loan);
+    }
     
     if (loan.remainingBalance <= 0) {
       loan.status = 'repaid';
