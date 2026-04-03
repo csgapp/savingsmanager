@@ -1361,12 +1361,15 @@
       const amount = prompt('Enter payment amount (K):');
       if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
         try {
+          alert('DEBUG: About to call recordLoanPayment');
           StorageManager.recordLoanPayment(loanId, parseFloat(amount));
+          alert('DEBUG: Payment done, loading lists');
           loadLoansList();
           loadMembersList();
           loadDashboardStats();
           UIManager.showToast('✅ Payment recorded successfully!', 'success');
         } catch (error) {
+          alert('ERROR: ' + error.message);
           UIManager.showToast(error.message, 'error');
         }
       }
