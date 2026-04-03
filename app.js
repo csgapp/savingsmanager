@@ -500,7 +500,11 @@ const StorageManager = {
 
     // Get current remaining balance
     let currentBalance = loan.remainingBalance;
-    if (!currentBalance) currentBalance = loan.totalPayment || loan.amount;
+    let backupBalance = loan.totalPayment || loan.amount;
+    
+    alert(`DEBUG:\nLoan ID: ${loan.id}\nremainingBalance field: ${loan.remainingBalance}\ntotalPayment field: ${loan.totalPayment}\namount field: ${loan.amount}\nUsing: ${currentBalance || backupBalance}`);
+    
+    if (!currentBalance) currentBalance = backupBalance;
     
     // Deduct payment
     let newBalance = currentBalance - amount;
@@ -517,8 +521,6 @@ const StorageManager = {
       loan.totalInterest = (loan.totalInterest || 0) + penalty;
       loan.totalPayment = (loan.totalPayment || 0) + penalty;
       loan.lastPenaltyDate = new Date().toISOString().split('T')[0];
-      
-      alert(`DEBUG:\nCurrent: K${currentBalance}\nPayment: K${amount}\nNew Balance: K${newBalance - penalty}\nPenalty (10%): K${penalty}\nFinal: K${newBalance}`);
     } else {
       // Loan fully paid
       newBalance = 0;
