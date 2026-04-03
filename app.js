@@ -502,9 +502,16 @@ const StorageManager = {
     loan.remainingBalance = (loan.remainingBalance || loan.totalPayment || loan.amount) - amount;
     loan.paymentsMade = (loan.paymentsMade || 0) + 1;
     
-    // THEN: Apply penalty on new remaining balance (if still active)
+    // THEN: Apply penalty IMMEDIATELY on new remaining balance (if still active)
     if (loan.remainingBalance > 0 && loan.status === 'active') {
-      this.checkAndApplyPenalty(loan);
+      const outstanding = loan.remainingBalance;
+      const penalty = outstanding * 0.10;
+      loan.remainingBalance = outstanding + penalty;
+      loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
+      loan.totalInterest = (loan.totalInterest || 0) + penalty;
+      loan.totalPayment = (loan.totalPayment || 0) + penalty;
+      loan.lastPenaltyDate = new Date().toISOString().split('T')[0];
+      loan.lastSavedDate = new Date().toISOString();
     }
     
     if (loan.remainingBalance <= 0) {
