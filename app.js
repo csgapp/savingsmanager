@@ -458,22 +458,29 @@ const StorageManager = {
     if (!loan || loan.status !== 'active') return loan;
     const outstanding = loan.remainingBalance || 0;
     if (outstanding <= 0) return loan;
-    const today = new Date();
-    const lastPenaltyDate = loan.lastPenaltyDate ? new Date(loan.lastPenaltyDate) : new Date(loan.issuedDate);
     
-    // Calculate days since last penalty (or loan issue date)
-    const daysSincePenalty = Math.floor((today - lastPenaltyDate) / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    const issuedDate = new Date(loan.issuedDate);
+    
+    // Use lastSavedDate if exists, otherwise use lastPenaltyDate, otherwise use issue date
+    let lastSaveDate = loan.lastSavedDate ? new Date(loan.lastSavedDate) : 
+                      (loan.lastPenaltyDate ? new Date(loan.lastPenaltyDate) : issuedDate);
+    
+    const daysSinceLastSave = Math.floor((today - lastSaveDate) / (1000 * 60 * 60 * 24));
     
     // Apply daily interest (10% per month = ~0.33% per day)
-    if (daysSincePenalty > 0) {
-      const dailyRate = 0.10 / 30; // 10% monthly
-      const penalty = outstanding * dailyRate * daysSincePenalty;
-      loan.remainingBalance = outstanding + penalty;
-      loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
-      loan.totalInterest = (loan.totalInterest || 0) + penalty;
-      loan.totalPayment = (loan.totalPayment || 0) + penalty;
-      loan.lastPenaltyDate = today.toISOString().split('T')[0];
-    }
+    // Always apply at least once per day to keep balance current
+    const daysToApply = Math.max(1, daysSinceLastSave);
+    const dailyRate = 0.10 / 30;
+    const penalty = outstanding * dailyRate * daysToApply;
+    
+    loan.remainingBalance = outstanding + penalty;
+    loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
+    loan.totalInterest = (loan.totalInterest || 0) + penalty;
+    loan.totalPayment = (loan.totalPayment || 0) + penalty;
+    loan.lastPenaltyDate = today.toISOString().split('T')[0];
+    loan.lastSavedDate = today.toISOString();
+    
     return loan;
   },
 

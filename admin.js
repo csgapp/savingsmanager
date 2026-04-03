@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  StorageManager.refreshLoans();
   loadDashboardStats();
   loadMembersList();
   loadLoansList();
