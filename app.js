@@ -461,9 +461,18 @@ const StorageManager = {
     const today = new Date().toISOString().split('T')[0];
     const lastPenaltyDate = loan.lastPenaltyDate || loan.issuedDate;
     const monthsSincePenalty = Math.floor((new Date(today) - new Date(lastPenaltyDate)) / (1000 * 60 * 60 * 24 * 30));
+    
+    // Apply penalty for each month missed
+    let penaltyApplied = false;
     if (monthsSincePenalty > 0) {
       for (let i = 0; i < monthsSincePenalty; i++) {
-        CalculationEngine.applyPenalty(loan);
+        const penalty = outstanding * 0.10;
+        loan.remainingBalance = outstanding + penalty;
+        loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
+        loan.totalInterest = (loan.totalInterest || 0) + penalty;
+        loan.totalPayment = (loan.totalPayment || 0) + penalty;
+        loan.lastPenaltyDate = today;
+        penaltyApplied = true;
       }
     }
     return loan;
