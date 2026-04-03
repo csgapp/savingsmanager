@@ -429,7 +429,9 @@ const StorageManager = {
       remainingBalance: loanDetails.totalPayment,
       paymentsMade: 0,
       penaltyCharged: 0,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      lastPenaltyDate: null,
+      lastSavedDate: null
     };
     
     loans.push(newLoan);
@@ -459,27 +461,21 @@ const StorageManager = {
     const outstanding = loan.remainingBalance || 0;
     if (outstanding <= 0) return loan;
     
-    const today = new Date();
-    const issuedDate = new Date(loan.issuedDate);
+    const today = new Date().toISOString().split('T')[0];
     
-    // Use lastSavedDate if exists, otherwise use lastPenaltyDate, otherwise use issue date
-    let lastSaveDate = loan.lastSavedDate ? new Date(loan.lastSavedDate) : 
-                      (loan.lastPenaltyDate ? new Date(loan.lastPenaltyDate) : issuedDate);
+    // Only apply once per day to avoid duplicate penalties
+    if (loan.lastPenaltyDate === today) {
+      return loan;
+    }
     
-    const daysSinceLastSave = Math.floor((today - lastSaveDate) / (1000 * 60 * 60 * 24));
-    
-    // Apply daily interest (10% per month = ~0.33% per day)
-    // Always apply at least once per day to keep balance current
-    const daysToApply = Math.max(1, daysSinceLastSave);
-    const dailyRate = 0.10 / 30;
-    const penalty = outstanding * dailyRate * daysToApply;
-    
+    // Apply EXACTLY 10% on remaining balance
+    const penalty = outstanding * 0.10;
     loan.remainingBalance = outstanding + penalty;
     loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
     loan.totalInterest = (loan.totalInterest || 0) + penalty;
     loan.totalPayment = (loan.totalPayment || 0) + penalty;
-    loan.lastPenaltyDate = today.toISOString().split('T')[0];
-    loan.lastSavedDate = today.toISOString();
+    loan.lastPenaltyDate = today;
+    loan.lastSavedDate = new Date().toISOString();
     
     return loan;
   },
