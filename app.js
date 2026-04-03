@@ -498,18 +498,30 @@ const StorageManager = {
     
     if (!loan) throw new Error('Loan not found');
 
+    console.log('=== LOAN PAYMENT DEBUG ===');
+    console.log('Loan ID:', loan.id);
+    console.log('Current remainingBalance:', loan.remainingBalance);
+    console.log('Current totalPayment:', loan.totalPayment);
+    console.log('Current amount:', loan.amount);
+    console.log('Payment amount:', amount);
+
     // Get current remaining balance
     let currentBalance = loan.remainingBalance;
     if (!currentBalance) currentBalance = loan.totalPayment || loan.amount;
     
+    console.log('Using currentBalance:', currentBalance);
+    
     // Deduct payment
     let newBalance = currentBalance - amount;
+    console.log('After payment:', newBalance);
     loan.paymentsMade = (loan.paymentsMade || 0) + 1;
     
     // Apply penalty if there's still a balance
     if (newBalance > 0) {
       const penalty = newBalance * 0.10;
+      console.log('Penalty (10%):', penalty);
       newBalance = newBalance + penalty;
+      console.log('Final balance:', newBalance);
       
       // Update loan
       loan.remainingBalance = newBalance;
