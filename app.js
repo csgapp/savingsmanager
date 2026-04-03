@@ -458,22 +458,21 @@ const StorageManager = {
     if (!loan || loan.status !== 'active') return loan;
     const outstanding = loan.remainingBalance || 0;
     if (outstanding <= 0) return loan;
-    const today = new Date().toISOString().split('T')[0];
-    const lastPenaltyDate = loan.lastPenaltyDate || loan.issuedDate;
-    const monthsSincePenalty = Math.floor((new Date(today) - new Date(lastPenaltyDate)) / (1000 * 60 * 60 * 24 * 30));
+    const today = new Date();
+    const lastPenaltyDate = loan.lastPenaltyDate ? new Date(loan.lastPenaltyDate) : new Date(loan.issuedDate);
     
-    // Apply penalty for each month missed
-    let penaltyApplied = false;
-    if (monthsSincePenalty > 0) {
-      for (let i = 0; i < monthsSincePenalty; i++) {
-        const penalty = outstanding * 0.10;
-        loan.remainingBalance = outstanding + penalty;
-        loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
-        loan.totalInterest = (loan.totalInterest || 0) + penalty;
-        loan.totalPayment = (loan.totalPayment || 0) + penalty;
-        loan.lastPenaltyDate = today;
-        penaltyApplied = true;
-      }
+    // Calculate days since last penalty (or loan issue date)
+    const daysSincePenalty = Math.floor((today - lastPenaltyDate) / (1000 * 60 * 60 * 24));
+    
+    // Apply daily interest (10% per month = ~0.33% per day)
+    if (daysSincePenalty > 0) {
+      const dailyRate = 0.10 / 30; // 10% monthly
+      const penalty = outstanding * dailyRate * daysSincePenalty;
+      loan.remainingBalance = outstanding + penalty;
+      loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
+      loan.totalInterest = (loan.totalInterest || 0) + penalty;
+      loan.totalPayment = (loan.totalPayment || 0) + penalty;
+      loan.lastPenaltyDate = today.toISOString().split('T')[0];
     }
     return loan;
   },
