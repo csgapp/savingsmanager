@@ -498,25 +498,30 @@ const StorageManager = {
     
     if (!loan) throw new Error('Loan not found');
 
-    // FIRST: Deduct the payment
-    loan.remainingBalance = (loan.remainingBalance || loan.totalPayment || loan.amount) - amount;
+    // Get current remaining balance
+    let currentBalance = loan.remainingBalance;
+    if (!currentBalance) currentBalance = loan.totalPayment || loan.amount;
+    
+    // Deduct payment
+    let newBalance = currentBalance - amount;
     loan.paymentsMade = (loan.paymentsMade || 0) + 1;
     
-    // THEN: Apply penalty IMMEDIATELY on new remaining balance (if still active)
-    if (loan.remainingBalance > 0 && loan.status === 'active') {
-      const outstanding = loan.remainingBalance;
-      const penalty = outstanding * 0.10;
-      loan.remainingBalance = outstanding + penalty;
+    // Apply penalty if there's still a balance
+    if (newBalance > 0) {
+      const penalty = newBalance * 0.10;
+      newBalance = newBalance + penalty;
+      
+      // Update loan
+      loan.remainingBalance = newBalance;
       loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
       loan.totalInterest = (loan.totalInterest || 0) + penalty;
       loan.totalPayment = (loan.totalPayment || 0) + penalty;
       loan.lastPenaltyDate = new Date().toISOString().split('T')[0];
-      loan.lastSavedDate = new Date().toISOString();
-    }
-    
-    if (loan.remainingBalance <= 0) {
-      loan.status = 'repaid';
+    } else {
+      // Loan fully paid
+      newBalance = 0;
       loan.remainingBalance = 0;
+      loan.status = 'repaid';
       loan.repaidDate = new Date().toISOString().split('T')[0];
       
       const members = this.getItem(this.KEYS.MEMBERS);
