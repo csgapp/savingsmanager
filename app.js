@@ -134,36 +134,35 @@ const CalculationEngine = {
   },
 
   cumulative(P, r, n, installment) {
-    // Cumulative: 10% interest on remaining balance each month (same as compound)
+    // Cumulative: (Previous Total + Monthly Savings) * 1.10
     const monthlyRate = 0.10;
-    if (P && P > 0) {
-      let balance = P;
-      for (let month = 1; month <= n; month++) {
-        balance += balance * monthlyRate;
-      }
-      return balance;
-    }
+    let balance = P || 0;
+
     if (installment && installment > 0) {
-      let balance = 0;
       for (let month = 1; month <= n; month++) {
         balance += installment;
-        balance += balance * monthlyRate;
+        const interest = balance * monthlyRate;
+        balance += interest;
       }
       return balance;
     }
-    return 0;
+
+    for (let month = 1; month <= n; month++) {
+      const interest = balance * monthlyRate;
+      balance += interest;
+    }
+    return balance;
   },
 
   calculateLoan(principal, rate, months) {
     if (!principal || principal <= 0) return { monthlyPayment: 0, totalPayment: 0, totalInterest: 0, interestAmount: 0 };
-    const interestAmount = principal * rate;
+    const interestAmount = principal * 0.10;
     const totalPayment = principal + interestAmount;
-    const monthlyPayment = months > 0 ? totalPayment / months : totalPayment;
     return {
-      monthlyPayment,
-      totalPayment,
+      monthlyPayment: totalPayment,
+      totalPayment: totalPayment,
       totalInterest: interestAmount,
-      interestAmount
+      interestAmount: interestAmount
     };
   },
 
@@ -498,34 +497,18 @@ const StorageManager = {
     
     if (!loan) throw new Error('Loan not found');
 
-    // Get current remaining balance
-    let currentBalance = loan.remainingBalance;
-    let backupBalance = loan.totalPayment || loan.amount;
+    // MABENA LOGIC: Payment reduces PRINCIPLE directly.
+    let currentPrinciple = loan.remainingBalance || loan.amount;
+    let newPrinciple = Math.max(0, currentPrinciple - amount);
     
-    alert(`DEBUG:\nLoan ID: ${loan.id}\nremainingBalance field: ${loan.remainingBalance}\ntotalPayment field: ${loan.totalPayment}\namount field: ${loan.amount}\nUsing: ${currentBalance || backupBalance}`);
-    
-    if (!currentBalance) currentBalance = backupBalance;
-    
-    // Deduct payment
-    let newBalance = currentBalance - amount;
     loan.paymentsMade = (loan.paymentsMade || 0) + 1;
-    
-    // Apply penalty if there's still a balance
-    if (newBalance > 0) {
-      const penalty = newBalance * 0.10;
-      newBalance = newBalance + penalty;
-      
-      // Update loan
-      loan.remainingBalance = newBalance;
-      loan.penaltyCharged = (loan.penaltyCharged || 0) + penalty;
-      loan.totalInterest = (loan.totalInterest || 0) + penalty;
-      loan.totalPayment = (loan.totalPayment || 0) + penalty;
-      loan.lastPenaltyDate = new Date().toISOString().split('T')[0];
-    } else {
-      // Loan fully paid
-      newBalance = 0;
-      loan.remainingBalance = 0;
+    loan.remainingBalance = newPrinciple;
+
+    if (newPrinciple <= 0) {
       loan.status = 'repaid';
+      loan.remainingBalance = 0;
+      loan.totalPayment = 0;
+      loan.totalInterest = 0;
       loan.repaidDate = new Date().toISOString().split('T')[0];
       
       const members = this.getItem(this.KEYS.MEMBERS);
@@ -534,6 +517,11 @@ const StorageManager = {
         member.activeLoans = Math.max(0, (member.activeLoans || 0) - 1);
         this.setItem(this.KEYS.MEMBERS, members);
       }
+    } else {
+      // Recalculate interest on the new principle
+      const interest = newPrinciple * 0.10;
+      loan.totalInterest = interest;
+      loan.totalPayment = newPrinciple + interest;
     }
     
     this.setItem(this.KEYS.LOANS, loans);
@@ -542,7 +530,7 @@ const StorageManager = {
       memberId: loan.memberId,
       type: 'loan_payment',
       amount: amount,
-      description: `Loan payment for ${loan.purpose || 'loan'}`,
+      description: `Loan payment - New principle: ${newPrinciple}`,
       reference: loanId,
       isFee: false
     });
