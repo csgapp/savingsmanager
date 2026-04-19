@@ -426,17 +426,16 @@
 
       <!-- All Members Results -->
       <div class="members-results" style="margin-top: 40px;">
-        <h3>All Members - Current Cycle</h3>
+        <h3>All Members - Final Share-Out Summary</h3>
+        <p style="color: var(--dark-gray); font-size: 0.9rem; margin-bottom: 20px;">Includes savings payouts minus outstanding loan balances.</p>
         <div class="table-responsive">
           <table id="resultsTable">
             <thead>
               <tr>
                 <th>Member</th>
-                <th>Upfront</th>
-                <th>Installments</th>
-                <th>Upfront Payout</th>
-                <th>Installment Payout</th>
-                <th>Total Payout</th>
+                <th>Savings Payout</th>
+                <th>Loan Balance</th>
+                <th>Net Take-Home</th>
               </tr>
             </thead>
             <tbody id="resultsBody"></tbody>
@@ -1043,36 +1042,46 @@ CalculationEngine.run = function(method, params) {
       // Load all members results
       function loadAllMembersResults() {
         const members = StorageManager.getItem(StorageManager.KEYS.MEMBERS) || [];
+        const loans = StorageManager.getItem(StorageManager.KEYS.LOANS) || [];
         const months = Number(document.getElementById('months').value) || 8;
         const method = methodSelector.value;
         
         const tbody = document.getElementById('resultsBody');
         tbody.innerHTML = '';
         
-        let highestPayout = 0;
-        let totalPayout = 0;
+        let totalGroupPayout = 0;
+        let totalOutstandingLoans = 0;
+        let totalNetTakeHome = 0;
         
         members.filter(m => m.role !== 'admin').forEach(member => {
+          // Calculate Savings Payout
           const contributions = getMemberContributions(member.id, months);
           const upfront = contributions.upfront;
           const installment = contributions.monthlyInstallment;
-          const totalInstallments = contributions.totalInstallments;
-          
+
           const upfrontResult = CalculationEngine.run(method, { P: upfront, r: 0.10, n: months }) || 0;
           const installmentResult = CalculationEngine.run(method, { P: null, r: 0.10, n: months, installment: installment }) || 0;
-          const total = upfrontResult + installmentResult;
+          const savingsPayout = upfrontResult + installmentResult;
           
-          if (total > highestPayout) highestPayout = total;
-          totalPayout += total;
+          // Calculate Outstanding Loans
+          const memberLoans = loans.filter(l => l.memberId === member.id && l.status === 'active');
+          const loanBalance = memberLoans.reduce((sum, l) => sum + (l.remainingBalance || l.totalPayment || l.amount), 0);
+
+          const netTakeHome = Math.max(0, savingsPayout - loanBalance);
+
+          totalGroupPayout += savingsPayout;
+          totalOutstandingLoans += loanBalance;
+          totalNetTakeHome += netTakeHome;
           
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td><strong>${member.name}</strong></td>
-            <td>${UIManager.formatCurrency(upfront)}</td>
-            <td>${UIManager.formatCurrency(totalInstallments)}</td>
-            <td>${UIManager.formatCurrency(upfrontResult)}</td>
-            <td>${UIManager.formatCurrency(installmentResult)}</td>
-            <td><strong>${UIManager.formatCurrency(total)}</strong></td>
+            <td>
+              <strong>${member.name}</strong>
+              <div style="font-size: 0.75rem; color: #666;">ID: ${member.id.slice(-6)}</div>
+            </td>
+            <td>${UIManager.formatCurrency(savingsPayout)}</td>
+            <td style="color: var(--danger);">${UIManager.formatCurrency(loanBalance)}</td>
+            <td><strong style="color: var(--secondary);">${UIManager.formatCurrency(netTakeHome)}</strong></td>
           `;
           tbody.appendChild(row);
         });
@@ -1080,10 +1089,11 @@ CalculationEngine.run = function(method, params) {
         const summaryRow = document.getElementById('summaryRow');
         if (summaryRow) {
           summaryRow.innerHTML = `
-              <tr>
-              <td colspan="6" style="text-align: right; font-weight: bold;">
-                Total Payout: ${UIManager.formatCurrency(totalPayout)} | Highest: ${UIManager.formatCurrency(highestPayout)}
-                </td>
+              <tr style="background: #f8f9fa; font-weight: bold;">
+                <td style="text-align: right;">TOTALS:</td>
+                <td>${UIManager.formatCurrency(totalGroupPayout)}</td>
+                <td style="color: var(--danger);">${UIManager.formatCurrency(totalOutstandingLoans)}</td>
+                <td style="color: var(--secondary); font-size: 1.1rem;">${UIManager.formatCurrency(totalNetTakeHome)}</td>
               </tr>
           `;
         }
