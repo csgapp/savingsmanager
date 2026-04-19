@@ -8,14 +8,15 @@
   <title>Admin Dashboard - Savings Group Manager</title>
   
   <!-- ================ PROFESSIONAL FAVICON ================ -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2320B2AA'/><rect x='20' y='50' width='60' height='35' fill='%23808080'/><polygon points='50,15 15,50 85,50' fill='%23B0B0B0'/><rect x='25' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='38' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='51' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='64' y='50' width='8' height='35' fill='%23A9A9A9'/><rect x='46' y='65' width='12' height='20' fill='%232F2F2F'/><circle cx='52' cy='75' r='2' fill='%23FFD700'/></svg>">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%2320B2AA'/><rect x='36' y='90' width='108' height='63' fill='%23808080'/><polygon points='90,27 27,90 153,90' fill='%23B0B0B0'/><rect x='45' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='68' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='91' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='114' y='90' width='14' height='63' fill='%23A9A9A9'/><rect x='82' y='117' width='22' height='36' fill='%232F2F2F'/><circle cx='93' cy='135' r='4' fill='%23FFD700'/></svg>">
-  <meta name="msapplication-TileColor" content="#20B2AA">
-  <meta name="theme-color" content="#20B2AA">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2326A69A'/><path d='M50 20 L20 45 L20 80 L80 80 L80 45 Z' fill='white'/><rect x='45' y='55' width='10' height='25' fill='%2326A69A'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%2326A69A'/><path d='M90 36 L36 81 L36 144 L144 144 L144 81 Z' fill='white'/><rect x='81' y='99' width='18' height='45' fill='%2326A69A'/></svg>">
+  <meta name="msapplication-TileColor" content="#26A69A">
+  <meta name="theme-color" content="#26A69A">
   
   <!-- ================ STYLESHEETS ================ -->
   <link rel="stylesheet" href="styles.css">
-  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
   <style>
     /* Additional admin-specific styles */
     .quick-actions {
@@ -233,7 +234,7 @@
   <!-- Navigation -->
   <nav class="admin-nav">
     <div class="nav-brand">
-      <span style="font-size: 1.5rem; margin-right: 10px;">🏦</span>
+      <i class="fas fa-landmark" style="margin-right: 10px;"></i>
       Savings Group Manager - Admin
     </div>
     <div class="nav-links">
@@ -261,6 +262,11 @@
         <div style="font-size: 2rem; margin-bottom: 10px;">➕</div>
         <h4>Add Member</h4>
         <p>Register new member to the group</p>
+      </div>
+      <div class="action-card" onclick="openBulkMemberModal()">
+        <div style="font-size: 2rem; margin-bottom: 10px;">📤</div>
+        <h4>Bulk Upload</h4>
+        <p>Import members from CSV file</p>
       </div>
       <div class="action-card" onclick="openLoanModal()">
         <div style="font-size: 2rem; margin-bottom: 10px;">💰</div>
@@ -329,9 +335,12 @@
 
     <!-- ================ MEMBER MANAGEMENT SECTION ================ -->
     <div class="panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
         <h2 style="margin: 0;">👥 Member Management</h2>
-        <button onclick="openAddMemberModal()" class="btn-primary" style="width: auto;">+ Add New Member</button>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="openBulkMemberModal()" class="btn-secondary" style="width: auto;">📤 Bulk Upload</button>
+          <button onclick="openAddMemberModal()" class="btn-primary" style="width: auto;">+ Add New Member</button>
+        </div>
       </div>
       
       <!-- Members Table -->
@@ -584,10 +593,15 @@
           <small style="color: var(--dark-gray);">Annual fee - charged once</small>
         </div>
         <div class="form-group">
-       <label>Social Fund (K)</label>
-       <input type="number" id="modalSocialFund" value="90" readonly>
-       <small style="color: var(--dark-gray);">Social fund contribution - charged once</small>
-      </div>
+          <label>Social Fund (K)</label>
+          <input type="number" id="modalSocialFund" value="90" readonly>
+          <small style="color: var(--dark-gray);">Social fund contribution - charged once</small>
+        </div>
+        <div class="form-group">
+          <label>One-Time Password (OTP) *</label>
+          <input type="text" id="modalMemberPassword" placeholder="Create a temporary password" required>
+          <small style="color: var(--dark-gray);">Member will use this to login for the first time</small>
+        </div>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
           <button type="submit" class="btn-primary" style="flex: 1;">Add Member</button>
           <button type="button" onclick="closeAddMemberModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
@@ -722,6 +736,39 @@
   <div id="exportProgress" class="export-progress">
     <div class="spinner"></div>
     <span>Generating your report...</span>
+  </div>
+
+  <!-- ================ BULK MEMBER MODAL ================ -->
+  <div id="bulkMemberModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Bulk Member Upload</h3>
+        <span class="close-modal" onclick="closeBulkMemberModal()">&times;</span>
+      </div>
+      <div style="padding: 20px;">
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; border-left: 4px solid #1e88e5;">
+          <h4 style="color: #1e88e5; margin-bottom: 8px;">CSV Format Instructions</h4>
+          <p>Your CSV file should have these columns in order:</p>
+          <code style="display: block; background: white; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px;">Name, Email, Phone, InitialSavings, OTP</code>
+          <p style="margin-top: 8px;"><strong>Note:</strong> If OTP is empty, the default will be <code>Member123!</code></p>
+        </div>
+
+        <div class="form-group">
+          <label>Select CSV File</label>
+          <input type="file" id="bulkMemberFile" accept=".csv" style="padding: 10px; border: 2px dashed #ddd;">
+        </div>
+
+        <div id="bulkPreview" style="display: none; margin-bottom: 20px;">
+          <p style="font-weight: bold; color: #2e7d32;" id="bulkCountText">0 members found</p>
+          <div style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 12px;" id="bulkListPreview"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="button" id="confirmBulkBtn" class="btn-primary" style="flex: 1; background: #2e7d32;" disabled>Confirm Import</button>
+          <button type="button" onclick="closeBulkMemberModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
@@ -1107,6 +1154,111 @@
       });
     }
 
+    // ================ BULK MEMBER HANDLERS ================
+    let bulkData = [];
+
+    function openBulkMemberModal() {
+      document.getElementById('bulkMemberModal').classList.add('active');
+    }
+
+    function closeBulkMemberModal() {
+      document.getElementById('bulkMemberModal').classList.remove('active');
+      document.getElementById('bulkMemberFile').value = '';
+      document.getElementById('bulkPreview').style.display = 'none';
+      document.getElementById('confirmBulkBtn').disabled = true;
+      bulkData = [];
+    }
+
+    document.getElementById('bulkMemberFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const text = event.target.result;
+        const lines = text.split('\n');
+        bulkData = [];
+
+        // Skip header row if it exists
+        const startIndex = (lines[0].toLowerCase().includes('name')) ? 1 : 0;
+
+        for (let i = startIndex; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const parts = line.split(',').map(p => p.trim().replace(/"/g, ''));
+          if (parts.length < 2) continue;
+
+          bulkData.push({
+            name: parts[0],
+            email: parts[1],
+            phone: parts[2] || '',
+            initialSavings: parseFloat(parts[3]) || 0,
+            password: parts[4] || 'Member123!'
+          });
+        }
+
+        if (bulkData.length > 0) {
+          document.getElementById('bulkPreview').style.display = 'block';
+          document.getElementById('bulkCountText').textContent = `✅ ${bulkData.length} members ready to import`;
+          document.getElementById('bulkListPreview').innerHTML = bulkData.map(m => `• ${m.name} (${m.email})`).join('<br>');
+          document.getElementById('confirmBulkBtn').disabled = false;
+        } else {
+          UIManager.showToast('No valid member data found in file', 'error');
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('confirmBulkBtn').addEventListener('click', function() {
+      let successCount = 0;
+      let errorCount = 0;
+
+      this.disabled = true;
+      this.textContent = 'Importing...';
+
+      bulkData.forEach(memberData => {
+        try {
+          const newMember = StorageManager.addMember({
+            ...memberData,
+            role: 'member'
+          });
+
+          StorageManager.createUser({
+            name: memberData.name,
+            email: memberData.email,
+            password: memberData.password,
+            role: 'member'
+          });
+
+          if (memberData.initialSavings > 0) {
+            StorageManager.addTransaction({
+              memberId: newMember.id,
+              type: 'savings',
+              amount: memberData.initialSavings,
+              description: 'Initial savings deposit'
+            });
+          }
+          successCount++;
+        } catch (e) {
+          console.error('Bulk import error for:', memberData.email, e);
+          errorCount++;
+        }
+      });
+
+      UIManager.showToast(`Import complete: ${successCount} added, ${errorCount} errors`,
+                         errorCount === 0 ? 'success' : 'warning');
+
+      closeBulkMemberModal();
+      loadMembersList();
+      loadDashboardStats();
+      loadMemberProgress();
+      this.textContent = 'Confirm Import';
+    });
+
+    window.openBulkMemberModal = openBulkMemberModal;
+    window.closeBulkMemberModal = closeBulkMemberModal;
+
     // ================ MODAL FUNCTIONS ================
     function openAddMemberModal() {
       document.getElementById('addMemberModal').classList.add('active');
@@ -1149,9 +1301,14 @@
     initialSavings: parseFloat(document.getElementById('modalInitialSavings').value) || 0,
     monthlyInstallment: parseFloat(document.getElementById('modalMonthlyInstallment').value) || 0,
     role: 'member',
-    password: 'member123'
+    password: document.getElementById('modalMemberPassword').value
   };
-  
+
+  if (!memberData.password) {
+    UIManager.showToast('Please provide a One-Time Password', 'error');
+    return;
+  }
+
   try {
     const newMember = StorageManager.addMember(memberData);
     
